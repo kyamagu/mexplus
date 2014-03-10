@@ -15,9 +15,11 @@ using namespace mexplus;
 /** Hypothetical environment object.
  */
 struct Environment {
-  int code = 0;
-  string status = "environment looks normal.";
+  int code;
+  string status;
 };
+
+namespace mexplus {
 
 /** Demonstrates custom conversion for write.
  */
@@ -40,14 +42,16 @@ void MxArray::to(const mxArray* array, Environment* value) {
   MxArray::at(array, "status", &value->status);
 }
 
+} // namespace mexplus
+
 namespace {
 
 // This local variable will be kept between MEX calls until cleared.
-Environment environment;
+Environment environment = {0, "environment looks normal."};
 
 // Defines MEX API for getEnvironment.
 MEX_DEFINE(getEnvironment) (int nlhs, mxArray* plhs[],
-                         int nrhs, const mxArray* prhs[]) {
+                            int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 0);
   OutputArguments output(nlhs, &plhs, 1);
   output.set(0, MxArray::from(environment));
@@ -55,7 +59,7 @@ MEX_DEFINE(getEnvironment) (int nlhs, mxArray* plhs[],
 
 // Defines MEX API for getEnvironment.
 MEX_DEFINE(setEnvironment) (int nlhs, mxArray* plhs[],
-                         int nrhs, const mxArray* prhs[]) {
+                            int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, &plhs, 0);
   MxArray::to(input.get(0), &environment);

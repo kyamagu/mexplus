@@ -150,7 +150,7 @@ T InputArguments::get(size_t index) const {
 
 template <typename T>
 void InputArguments::get(size_t index, T* value) const {
-  MxArray(get(index)).to<T>(value);
+  MxArray::to<T>(get(index), value);
 }
 
 template <typename T>
@@ -200,7 +200,7 @@ public:
    */
   template <typename T>
   void set(size_t index, const T& value) {
-    set(index, MxArray(value).release());
+    set(index, MxArray::from(value));
   }
   /** Size of the output.
    */

@@ -53,6 +53,7 @@
 #include <mexplus/mxtypes.h>
 #include <stdint.h>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 /** Macro definitions.

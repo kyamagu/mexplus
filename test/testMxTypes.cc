@@ -5,6 +5,7 @@
 
 #include <mex.h>
 #include <mexplus/mxtypes.h>
+#include <stdint.h>
 
 using namespace std;
 using mexplus::MxTypes;

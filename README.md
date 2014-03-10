@@ -6,9 +6,9 @@ C++ Matlab MEX development kit.
 The kit contains a couple of C++ wrappers to make MEX development easy in
 Matlab. There are 3 major components of the development kit.
 
- * `mxarray.h` MxArray data conversion and access class.
- * `arguments.h` MEX function argument wrapper classes.
- * `dispatch.h` Helper to make a stateful MEX binary.
+ * `mexplus/mxarray.h` MxArray data conversion and access class.
+ * `mexplus/arguments.h` MEX function argument wrappers.
+ * `mexplus/dispatch.h` Helper to make a stateful MEX binary.
 
 Example
 -------
@@ -75,7 +75,8 @@ MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
 ```
 
 Build: The above files can be compiled by mex command. The development kit also
-contains `make.m` build function to make a build process easier.
+contains `make.m` build function to make a build process easier. The kit
+depends on some of the C++11 features. In Linux, you might need to add `CFLAGS="$CFLAGS -std=c++01x"` to `mex` command to build.
 
 ```matlab
 mex -Iinclude Database.cc src/mexplus/arguments.cc src/mexplus/dispatch.cc \
@@ -83,3 +84,13 @@ mex -Iinclude Database.cc src/mexplus/arguments.cc src/mexplus/dispatch.cc \
 ```
 
 See `example` directory for a complete demonstration.
+
+
+Test
+----
+
+Run the following to run a test of mexplus.
+
+```matlab
+make test
+```
