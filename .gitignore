@@ -1,0 +1,5 @@
+*.o
+*.obj
+*~
+*.mex*
+.DS_Store
