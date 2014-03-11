@@ -18,7 +18,9 @@ struct MxLogicalType : std::false_type {};
 
 template <typename T>
 struct MxLogicalType<T, typename std::enable_if<
-    std::is_same<typename std::remove_cv<T>::type, bool>::value, T>::type> :
+    std::is_same<typename std::remove_cv<T>::type, bool>::value ||
+    std::is_same<typename std::remove_cv<T>::type, mxLogical>::value,
+    T>::type> :
     std::true_type {};
 
 /** Traits for mxChar-convertibles.
@@ -33,9 +35,11 @@ struct MxCharType : std::false_type {};
 template <typename T>
 struct MxCharType<T, typename std::enable_if<
     std::is_same<typename std::remove_cv<T>::type, char>::value ||
-    std::is_same<typename std::remove_cv<T>::type, wchar_t>::value ||
-    std::is_same<typename std::remove_cv<T>::type, char16_t>::value ||
-    std::is_same<typename std::remove_cv<T>::type, char32_t>::value,
+    // Visual Studio cannot distinguish these from uint.
+    //std::is_same<typename std::remove_cv<T>::type, char16_t>::value ||
+    //std::is_same<typename std::remove_cv<T>::type, char32_t>::value ||
+    std::is_same<typename std::remove_cv<T>::type, mxChar>::value ||
+    std::is_same<typename std::remove_cv<T>::type, wchar_t>::value,
     T>::type> :
     std::true_type {};
 
