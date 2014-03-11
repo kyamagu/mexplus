@@ -32,7 +32,7 @@ function make(command, varargin)
 end
 
 function target = getTarget(root_dir)
-%BUILDEXAMPLE Build an example.
+%GETTARGET Get a build target.
 	target = struct( ...
     'name', fullfile(root_dir, 'example', 'private', 'Database_'), ...
     'sources', {{ ...
@@ -44,7 +44,7 @@ function target = getTarget(root_dir)
 end
 
 function targets = getTestTargets(root_dir)
-%BUILDMEXPLUS Build test files.
+%GETTESTTARGETS Get test build targets.
 	options = sprintf('-I''%s''', fullfile(root_dir, 'include'));
 	targets = [ ...
 		struct( ...

@@ -199,7 +199,7 @@ public:
   static void destroy(const mxArray* pointer) {
     destroy(getIntPointer(pointer));
   }
-  /** Retrieve an instance. Return NULL if there is no instance.
+  /** Retrieve an instance or throw if no instance is found.
    */
   static T* get(intptr_t id) {
     InstanceMap* instances = getInstances();
@@ -212,6 +212,14 @@ public:
   }
   static T* get(const mxArray* pointer) {
     return get(getIntPointer(pointer));
+  }
+  /** Retrieve a const instance or throw if no instance is found.
+   */
+  static const T& getConst(intptr_t id) {
+    return *get(id);
+  }
+  static const T& getConst(const mxArray* pointer) {
+    return getConst(getIntPointer(pointer));
   }
   /** Check if the given id exists.
    */

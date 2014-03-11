@@ -20,8 +20,8 @@ Create the following files.
 
 `Database.m`
 
-Matlab class interface file. Provides a wrapper to `Database_` MEX function.
-For simplicity, just three methods are shown.
+Matlab class interface file. Provides a wrapper to `Database_` MEX function in
+its methods, which is implemented in a C++ file.
 
 ```matlab
 classdef Database < handle
@@ -44,8 +44,11 @@ methods
 
   function result = query(this, key)
   %QUERY Query to the database.
+    assert(isscalar(this));
     result = Database_('query', this.id_, key);
   end
+
+  % Other methods...
 end
 ```
 
@@ -53,7 +56,9 @@ end
 
 C++ Implementation of MEX function. Provide MEX entry points by `MEX_DEFINE`
 macro, and insert `MEX_MAIN` at the end. Notice how inputs and outputs are
-wrapped by mexplus.
+wrapped by mexplus `InputArguments` and `OutputArguments` class. The `Session` 
+class keeps instances of `Database objects` between MEX calls, allowing the
+MEX binary to be stateful.
 
 ```c++
 // Demonstration of Hypothetical MEX database API.
@@ -72,7 +77,7 @@ public:
   // Other methods...
 };
 
-// Instantiate a Session manager.
+// Create a new instance of Database and return its session id.
 template class mexplus::Session<Database>;
 
 MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
@@ -83,6 +88,7 @@ MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
       new Database(input.get<std::string>(0))));
 }
 
+// Delete the Database instance specified by its id.
 MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
@@ -90,12 +96,13 @@ MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
   Session<Database>::destroy(input.get(0));
 }
 
+// Query to the Database instance specified by its id with a string argument.
 MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 2);
   OutputArguments output(nlhs, &plhs, 1);
-  Database* database = Session<Database>::get(input.get(0));
-  output.set(0, database->query(input.get<string>(1)));
+  const Database& database = Session<Database>::getConst(input.get(0));
+  output.set(0, database.query(input.get<string>(1)));
 }
 
 // Other entry points...
@@ -108,7 +115,7 @@ _Build_
 The above files can be compiled by mex command. The development kit also
 contains `make.m` build function to make a build process easier. The kit
 depends on some of the C++11 features. In Linux, you might need to add `CFLAGS="$CFLAGS -std=c++01x"` to `mex` command to build. The output name
-`Database_` is how the compiled binary is used in `Database.m`.
+`Database_` is the MEX binary name in `Database.m`.
 
 ```matlab
 mex -Iinclude Database.cc -output Database_
@@ -224,15 +231,15 @@ construction.
 
 ```c++
 // Read access.
-MxArray cell(prhs[0]);   // Assumes a cell array in prhs[0].
+MxArray cell(prhs[0]);   // {x, y, ...}
 int x = cell.at<int>(0);
 vector<double> y = cell.at<vector<double> >(1);
 
-MxArray struct_array(prhs[0]);   // Assumes a struct array in prhs[0].
+MxArray struct_array(prhs[0]);   // struct('field1', x, ...)
 int x = struct_array.at<int>("field1");
 vector<double> y = struct_array.at<vector<double> >("field2");
 
-MxArray numeric(prhs[0]);   // Assumes a numeric array in prhs[0].
+MxArray numeric(prhs[0]);   // [x, y, ...]
 double x = numeric.at<double>(0);
 int y = numeric.at<int>(1);
 ```
@@ -243,20 +250,20 @@ MxArray cell(MxArray::Cell(1, 3));
 cell.set(0, 12);
 cell.set(1, "text value.");
 cell.set(2, vector<double>(4, 0));
-plhs[0] = cell.release();
+plhs[0] = cell.release(); // {12, 'text value.', [0, 0, 0, 0]}
 
 MxArray struct_array(MxArray::Struct());
 struct_array.set("field1", 12);
 struct_array.set("field2", "text value.");
 struct_array.set("field3", vector<double>(4, 0));
-plhs[0] = struct_array.release();
+plhs[0] = struct_array.release(); // struct('field1', 12, ...)
 
 MxArray numeric(MxArray::Numeric<double>(2, 2));
-numeric.set(0, 1);
-numeric.set(1, 2);
-numeric.set(2, 3);
-numeric.set(3, 4);
-plhs[0] = numeric.release();
+numeric.set(0, 0, 1);
+numeric.set(0, 1, 2);
+numeric.set(1, 0, 3);
+numeric.set(1, 1, 4);
+plhs[0] = numeric.release(); // [1, 2; 3, 4]
 ```
 
 To add your own data conversion, define in `namespace mexplus` a template
@@ -280,9 +287,9 @@ void MxArray::to(const mxArray* array, MyObject* value) {
 
 // Then you can use any of the following.
 MyObject object;
-vector<MyObject> object_vector;
+std::vector<MyObject> object_vector;
 MxArray::to<MyObject>(prhs[0], &object);
-MxArray::to<vector<MyObject> >(prhs[1], &object_vector);
+MxArray::to<std::vector<MyObject> >(prhs[1], &object_vector);
 plhs[0] = MxArray::from(object);
 plhs[1] = MxArray::from(object_vector);
 ```

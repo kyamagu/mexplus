@@ -25,7 +25,7 @@ public:
   virtual ~Database() {}
   /** Database query.
    */
-  string query(const string& key) {
+  string query(const string& key) const {
     mexPrintf("Querying '%s'.\n", key.c_str());
     return key;
   }
@@ -57,8 +57,8 @@ MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 2);
   OutputArguments output(nlhs, &plhs);
-  Database* database = Session<Database>::get(input.get(0));
-  output.set(0, database->query(input.get<string>(1)));
+  const Database& database = Session<Database>::getConst(input.get(0));
+  output.set(0, database.query(input.get<string>(1)));
 }
 
 } // namespace

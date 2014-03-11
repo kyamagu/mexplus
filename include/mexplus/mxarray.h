@@ -34,10 +34,10 @@
  *    plhs[0] = cell.release();
  *
  *    MxArray numeric(MxArray::Numeric<double>(2, 2));
- *    numeric.set(0, 1);
- *    numeric.set(1, 2);
- *    numeric.set(2, 3);
- *    numeric.set(3, 4);
+ *    numeric.set(0, 0, 1);
+ *    numeric.set(0, 1, 2);
+ *    numeric.set(1, 0, 3);
+ *    numeric.set(1, 1, 4);
  *    plhs[0] = numeric.release();
  *
  * To add your own data conversion, define in namespace mexplus a template
