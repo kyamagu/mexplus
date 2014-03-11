@@ -13,7 +13,7 @@
  * void mexFunction(int nlhs, mxArray* plhs[],
  *                  int nrhs, const mxArray* prhs) {
  *   InputArguments input(nrhs, prhs, 2, 1, "Flag");
- *   OutputArguments output(nlhs, &plhs, 1);
+ *   OutputArguments output(nlhs, plhs, 1);
  *   vector<double> result = myFunction(input.get<vector<double> >(0),
  *                                      input.get<string>(1),
  *                                      input.get<int>("Flag", 0));
@@ -283,7 +283,7 @@ void InputArguments::get(const std::string& option_name,
  *
  * Example:
  *
- *     OutputArguments output(nlhs, &plhs, 3);
+ *     OutputArguments output(nlhs, plhs, 3);
  *     MxArray cell = MxArray::Cell(1, 3);
  *     cell.set(0, 0);
  *     cell.set(1, 1);
@@ -297,7 +297,7 @@ public:
   /** Construct output argument wrapper.
    */
   OutputArguments(int nlhs,
-                  mxArray*** plhs,
+                  mxArray** plhs,
                   int maximum_size = 1,
                   int mandatory_size = 0) : nlhs_(nlhs), plhs_(plhs) {
     if (mandatory_size > nlhs)
@@ -315,7 +315,7 @@ public:
    */
   void set(size_t index, mxArray* value) {
     if (index < nlhs_)
-      (*plhs_)[index] = value;
+      plhs_[index] = value;
   }
   /** Safely assign T to the output.
    */
@@ -333,7 +333,7 @@ public:
       mexErrMsgIdAndTxt("mexplus:arguments:error",
                         "Output index out of range: %d.",
                         index);
-    return (*plhs_)[index];
+    return plhs_[index];
   }
   /** Mutable square bracket operator.
    */
@@ -342,7 +342,7 @@ public:
       mexErrMsgIdAndTxt("mexplus:arguments:error",
                         "Output index out of range: %d.",
                         index);
-    return (*plhs_)[index];
+    return plhs_[index];
   }
 
 private:
@@ -351,7 +351,7 @@ private:
   int nlhs_;
   /** Output argument array.
    */
-  mxArray*** plhs_;
+  mxArray** plhs_;
 };
 
 } // namespace mexplus

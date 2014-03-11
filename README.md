@@ -83,7 +83,7 @@ template class mexplus::Session<Database>;
 MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
                   int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
-  OutputArguments output(nlhs, &plhs, 1);
+  OutputArguments output(nlhs, plhs, 1);
   output.set(0, Session<Database>::create(
       new Database(input.get<std::string>(0))));
 }
@@ -92,7 +92,7 @@ MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
 MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
-  OutputArguments output(nlhs, &plhs, 0);
+  OutputArguments output(nlhs, plhs, 0);
   Session<Database>::destroy(input.get(0));
 }
 
@@ -100,7 +100,7 @@ MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
 MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 2);
-  OutputArguments output(nlhs, &plhs, 1);
+  OutputArguments output(nlhs, plhs, 1);
   const Database& database = Session<Database>::getConst(input.get(0));
   output.set(0, database.query(input.get<string>(1)));
 }
@@ -196,7 +196,7 @@ myFunction(1.0, [1,2,3,4], 'option1', 'foo', 'option2', 10);
 ### OutputArguments
 
 ```c++
-OutputArguments output(nlhs, &plhs, 3);
+OutputArguments output(nlhs, plhs, 3);
 output.set(0, 1);
 output.set(1, "foo");
 MxArray cell = MxArray::Cell(1, 2);

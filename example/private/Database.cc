@@ -40,7 +40,7 @@ namespace {
 MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
                   int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs);
-  OutputArguments output(nlhs, &plhs);
+  OutputArguments output(nlhs, plhs);
   output.set(0, Session<Database>::create(new Database(input.get<string>(0))));
 }
 
@@ -48,7 +48,7 @@ MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
 MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs);
-  OutputArguments output(nlhs, &plhs, 0);
+  OutputArguments output(nlhs, plhs, 0);
   Session<Database>::destroy(input.get(0));
 }
 
@@ -56,7 +56,7 @@ MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
 MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 2);
-  OutputArguments output(nlhs, &plhs);
+  OutputArguments output(nlhs, plhs);
   const Database& database = Session<Database>::getConst(input.get(0));
   output.set(0, database.query(input.get<string>(1)));
 }
