@@ -361,33 +361,6 @@ public:
   }
   template <typename T>
   void to(T* value) const { toInternal<T>(array_, value); }
-  /** Convert to scalar type.
-   */
-  inline int toInt() const { return at<int>(0); }
-  inline double toDouble() const { return at<double>(0); }
-  inline bool toBool() const { return at<bool>(0); }
-  /** Convert MxArray to std::string.
-   * @return std::string value.
-   */
-  inline std::string toString() const { return to<std::string>(); }
-  inline void toString(std::string* value) const { to<std::string>(value); }
-  /** Convert MxArray to std::vector<T> for a primitive type.
-   * @return std::vector<T> value.
-   *
-   * The method is intended for conversion to a raw numeric vector such
-   * as std::vector<int> or std::vector<double>. Example:
-   *
-   * @code
-   *     MxArray array(prhs[0]);
-   *     vector<double> values = array.toVector<double>();
-   * @endcode
-   */
-  template <typename T>
-  inline std::vector<T> toVector() const { return to<std::vector<T> >(); }
-  template <typename T>
-  inline void toVector(std::vector<T>* value) const {
-    return to<std::vector<T> >(value);
-  }
   /** Template for element accessor.
    * @param index index of the array element.
    * @return value of the element at index.
