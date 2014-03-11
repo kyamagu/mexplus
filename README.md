@@ -20,8 +20,8 @@ Create the following files.
 
 `Database.m`
 
-Matlab class interface file. Provides a wrapper to `Database_`
-MEX function. For simplicity, just a constructor and a destructor is shown.
+Matlab class interface file. Provides a wrapper to `Database_` MEX function.
+For simplicity, just three methods are shown.
 
 ```matlab
 classdef Database < handle
@@ -40,6 +40,11 @@ methods
   function delete(this)
   %DELETE Destructor.
     Database_('close', this.id_);
+  end
+
+  function result = query(this, key)
+  %QUERY Query to the database.
+    result = Database_('query', this.id_, key);
   end
 end
 ```
@@ -61,8 +66,9 @@ using namespace mexplus;
 // Hypothetical database class.
 class Database {
 public:
-  Database(const std::string& filename);
+  Database(const string& filename);
   virtual ~Database();
+  string query(const string& key) const;
   // Other methods...
 };
 
@@ -84,6 +90,14 @@ MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
   Session<Database>::destroy(input.get(0));
 }
 
+MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
+                   int nrhs, const mxArray* prhs[]) {
+  InputArguments input(nrhs, prhs, 2);
+  OutputArguments output(nlhs, &plhs, 1);
+  Database* database = Session<Database>::get(input.get(0));
+  output.set(0, database->query(input.get<string>(1)));
+}
+
 // Other entry points...
 
 MEX_MAIN
@@ -93,7 +107,8 @@ _Build_
 
 The above files can be compiled by mex command. The development kit also
 contains `make.m` build function to make a build process easier. The kit
-depends on some of the C++11 features. In Linux, you might need to add `CFLAGS="$CFLAGS -std=c++01x"` to `mex` command to build.
+depends on some of the C++11 features. In Linux, you might need to add `CFLAGS="$CFLAGS -std=c++01x"` to `mex` command to build. The output name
+`Database_` is how the compiled binary is used in `Database.m`.
 
 ```matlab
 mex -Iinclude Database.cc -output Database_
@@ -175,10 +190,9 @@ myFunction(1.0, [1,2,3,4], 'foo', 'option1', 'foo', ...
 OutputArguments output(nlhs, &plhs, 3);
 output.set(0, 1);
 output.set(1, "foo");
-MxArray cell = MxArray::Cell(1, 3);
+MxArray cell = MxArray::Cell(1, 2);
 cell.set(0, 0);
-cell.set(1, 1);
-cell.set(2, "value");
+cell.set(1, "value");
 output.set(2, cell.release());
 ```
 
@@ -221,7 +235,9 @@ vector<double> y = struct_array.at<vector<double> >("field2");
 MxArray numeric(prhs[0]);   // Assumes a numeric array in prhs[0].
 double x = numeric.at<double>(0);
 int y = numeric.at<int>(1);
+```
 
+```c++
 // Write access.
 MxArray cell(MxArray::Cell(1, 3));
 cell.set(0, 12);
@@ -243,8 +259,8 @@ numeric.set(3, 4);
 plhs[0] = numeric.release();
 ```
 
-To add your own data conversion, define in namespace mexplus a template
-specialization of MxArray::from() and MxArray::to().
+To add your own data conversion, define in `namespace mexplus` a template
+specialization of `MxArray::from()` and `MxArray::to()`.
 
 ```c++
 class MyObject; // This is your custom data class.
@@ -265,10 +281,10 @@ void MxArray::to(const mxArray* array, MyObject* value) {
 // Then you can use any of the following.
 MyObject object;
 vector<MyObject> object_vector;
-MxArray::to<vector<MyObject> >(prhs[0], &object_vector);
-MxArray::to<vector<MyObject> >(prhs[1], &object);
-plhs[0] = MxArray::from(object_vector);
-plhs[1] = MxArray::from(object);
+MxArray::to<MyObject>(prhs[0], &object);
+MxArray::to<vector<MyObject> >(prhs[1], &object_vector);
+plhs[0] = MxArray::from(object);
+plhs[1] = MxArray::from(object_vector);
 ```
 
 Dispatching calls
