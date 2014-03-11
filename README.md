@@ -159,8 +159,8 @@ myFunction(input.get<double>(0),
 
 ```matlab
 % Matlab
-myFunction(1.0, 'option1', 'foo', 'option1', 'foo', ...
-                                  'option2', 10);
+myFunction(1.0, 2, 'option1', 'foo', ...
+                   'option2', 10);
 
 ```
 
@@ -185,10 +185,10 @@ else if (input.is("format2"))
 
 ```matlab
 % Matlab
-myFunction(1.0, 'secondArg', 'option1', 'foo', ...
-                             'option2', 10);
-myFunction(1.0, [1,2,3,4], 'foo', 'option1', 'foo', ...
-                                  'option2', 10);
+myFunction(1.0, 'option1', 'foo', ...
+                'option2', 10);
+myFunction(1.0, [1,2,3,4], 'option1', 'foo', ...
+                           'option2', 10);
 ```
 
 ### OutputArguments
