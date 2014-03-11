@@ -18,6 +18,7 @@ function make(command, varargin)
 	root_dir = fileparts(mfilename('fullpath'));
   switch command
     case 'clean'
+      clear mex;
     	targets = [getTarget(root_dir), getTestTargets(root_dir)];
       deleteTargets(targets);
     case 'test'
