@@ -9,8 +9,11 @@
 using namespace std;
 using mexplus::MxArray;
 
-#define EXPECT(condition) if (!(condition)) \
-    mexErrMsgTxt(#condition " not true.")
+#define EXPECT(...) if (!(__VA_ARGS__)) \
+    mexErrMsgIdAndTxt("test:MxArray", \
+                      #__VA_ARGS__ " not true: %s:%d", \
+                      __FILE__, \
+                      __LINE__)
 #define RUN_TEST(function) function(); \
     mexPrintf("PASS: %s\n", #function); \
     mexCallMATLAB(0, NULL, 0, NULL, "drawnow")
@@ -19,15 +22,31 @@ namespace {
 
 template <typename T>
 void testFundamentalScalar() {
-  T value = 2;
+  T value = 2, value2 = 0;
   MxArray array(value);
   EXPECT(array);
   EXPECT(array.size() == 1);
-  EXPECT(value == array.to<T>());
-  EXPECT(value == array.at<T>(0));
+  EXPECT(array.to<T>() == value);
+  EXPECT(array.at<T>(0) == value);
+  value2 = 0;
+  array.to<T>(&value2);
+  EXPECT(value2 == value);
+  value2 = 0;
+  array.at<T>(0, &value2);
+  EXPECT(value2 == value);
   array.set(0, 1);
   EXPECT(array.to<T>() == 1);
   EXPECT(array.at<T>(0) == 1);
+  mxArray* plhs = MxArray::from(value);
+  EXPECT(MxArray::at<T>(plhs, 0) == value);
+  EXPECT(MxArray::to<T>(plhs) == value);
+  value2 = 0;
+  MxArray::to<T>(plhs, &value2);
+  EXPECT(value2 == value);
+  value2 = 0;
+  MxArray::at<T>(plhs, 0, &value2);
+  EXPECT(value2 == value);
+  mxDestroyArray(plhs);
 }
 
 /** Check all fundamental type conversions.
