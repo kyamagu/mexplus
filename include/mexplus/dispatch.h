@@ -42,15 +42,15 @@
  *       ...
  *     }
  *
+ *     MEX_MAIN
+ *
  * This file is the implementation of the mex function. The MEX_DEFINE macro
- * defines an entry point of the function. The file content would look like
- * the following.
+ * defines an entry point of the function. MEX_MAIN macro at the end inserts
+ * necessary codes to dispatch function calls to an appropriate function.
  *
  * Similarly, you can write another pair of .m (and C++) file to add to your
- * library. You may split MEX_DEFINE macros in multiple C++ files. A
- * dispatchable MEX library can be then built with the following.
- *
- *     >> mex mylibrary.cc -lmexplus_dispatch -L/path/to/mexplus/lib
+ * library. You may split MEX_DEFINE macros in multiple C++ files. In that
+ * case, have MEX_MAIN macro in one of the files.
  *
  * Kota Yamaguchi 2014 <kyamagu@cs.stonybrook.edu>
  */
@@ -64,6 +64,10 @@
 #include <string>
 
 namespace mexplus {
+
+class OperationCreator;
+inline void CreateOperation(const std::string& name,
+                            OperationCreator* creator);
 
 /** Abstract operation class. Child class must implement operator().
  */
@@ -86,10 +90,12 @@ class OperationCreator {
 public:
   /** Register an operation in the constructor.
    */
-  OperationCreator(const std::string& name);
+  OperationCreator(const std::string& name) {
+    CreateOperation(name, this);
+  }
   /** Destructor.
    */
-  virtual ~OperationCreator();
+  virtual ~OperationCreator() {}
   /** Implementation must return a new instance of the operation.
    */
   virtual Operation* create() = 0;
@@ -111,16 +117,34 @@ class OperationFactory {
 public:
   /** Register a new creator.
    */
-  static void define(const std::string& name, OperationCreator* creator);
+  friend void CreateOperation(const std::string& name,
+                              OperationCreator* creator);
   /** Create a new instance of the registered operation.
    */
-  static Operation* create(const std::string& name);
+  static Operation* create(const std::string& name) {
+    std::map<std::string, OperationCreator*>::const_iterator it =
+        registry()->find(name);
+    if (it == registry()->end())
+      return static_cast<Operation*>(NULL);
+    else
+      return it->second->create();
+  }
 
 private:
   /** Obtain a pointer to the registration table.
    */
-  static std::map<std::string, OperationCreator*>* registry();
+  static std::map<std::string, OperationCreator*>* registry() {
+    static std::map<std::string, OperationCreator*> registry_table;
+    return &registry_table;
+  }
 };
+
+/** Register a new creator in OperationFactory.
+ */
+inline void CreateOperation(const std::string& name,
+                            OperationCreator* creator) {
+  OperationFactory::registry()->insert(make_pair(name, creator));
+}
 
 /** Key-value storage to make a stateful MEX function.
  *
@@ -257,5 +281,24 @@ private: \
 const mexplus::OperationCreatorImpl<Operation_##name> \
     Operation_##name::creator_(#name); \
 void Operation_##name::operator()
+
+/** Insert a function dispatching code. Use once per MEX binary.
+ */
+#define MEX_MAIN \
+void mexFunction(int nlhs, mxArray *plhs[], \
+                 int nrhs, const mxArray *prhs[]) { \
+  if (nrhs < 1 || !mxIsChar(prhs[0])) \
+    mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
+                      "Invalid argument: missing operation."); \
+  std::string operation_name( \
+      mxGetChars(prhs[0]), \
+      mxGetChars(prhs[0]) + mxGetNumberOfElements(prhs[0])); \
+  std::auto_ptr<mexplus::Operation> operation( \
+      mexplus::OperationFactory::create(operation_name)); \
+  if (operation.get() == NULL) \
+    mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
+        "Invalid operation: %s", operation_name.c_str()); \
+  (*operation)(nlhs, plhs, nrhs - 1, prhs + 1); \
+}
 
 #endif // __MEXPLUS_DISPATCH_H__

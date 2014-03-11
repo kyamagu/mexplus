@@ -80,3 +80,5 @@ MEX_DEFINE(clear) (int nlhs,
 }
 
 } // namespace
+
+MEX_MAIN

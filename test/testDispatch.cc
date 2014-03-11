@@ -25,3 +25,5 @@ MEX_DEFINE(bar) (int nlhs,
 }
 
 } // namespace
+
+MEX_MAIN

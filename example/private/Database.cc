@@ -18,7 +18,7 @@ public:
   /** Database constructor.
    */
   Database(const string& filename) {
-    mexPrintf("Opened '%s'.", filename.c_str());
+    mexPrintf("Opened '%s'.\n", filename.c_str());
   }
   /** Database destructor.
    */
@@ -26,7 +26,7 @@ public:
   /** Database query.
    */
   string query(const string& key) {
-    mexPrintf("Querying '%s'.", key.c_str());
+    mexPrintf("Querying '%s'.\n", key.c_str());
     return key;
   }
 };
@@ -62,3 +62,5 @@ MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
 }
 
 } // namespace
+
+MEX_MAIN

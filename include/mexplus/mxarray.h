@@ -85,34 +85,61 @@ class MxArray {
 public:
   /** Empty MxArray constructor. Use reset() to set a pointer.
    */
-  MxArray();
+  MxArray() : array_(NULL), owner_(false) {}
   /** NULL assignment.
    */
-  MxArray& operator= (std::nullptr_t);
+  MxArray& operator= (std::nullptr_t) {
+    reset();
+    return *this;
+  }
   /** Move constructor.
    */
-  MxArray(MxArray&& array);
+  MxArray(MxArray&& array) : array_(NULL), owner_(false) {
+    *this = std::move(array);
+  }
   /** Move assignment.
    */
-  MxArray& operator= (MxArray&& array);
-  /** MxArray constructor from const mxArray*. MxArray will not manage memory.
-   * @param array mxArray pointer given by mexFunction.
-   */
-  explicit MxArray(const mxArray* array);
+  MxArray& operator= (MxArray&& rhs) {
+    if (this != &rhs) {
+      array_ = rhs.array_;
+      owner_ = rhs.owner_;
+      rhs.array_ = NULL;
+      rhs.owner_ = false;
+    }
+    return *this;
+  }
   /** MxArray constructor from mutable mxArray*. MxArray will manage memory.
    * @param array mxArray pointer.
    */
-  explicit MxArray(mxArray* array);
+  explicit MxArray(const mxArray* array) :
+      array_(const_cast<mxArray*>(array)),
+      owner_(false) {}
+  /** MxArray constructor from const mxArray*. MxArray will not manage memory.
+   * @param array mxArray pointer given by mexFunction.
+   */
+  explicit MxArray(mxArray* array) : array_(array), owner_(array) {}
   /** MxArray constructor from scalar.
    */
   template <typename T>
   explicit MxArray(const T& value) : array_(from(value)), owner_(true) {}
   /** Destructor. Unreleased pointers will be destroyed.
    */
-  virtual ~MxArray();
+  virtual ~MxArray() {
+    if (array_ && owner_)
+      mxDestroyArray(array_);
+  }
   /** Swap operation.
    */
-  void swap(MxArray& rhs);
+  void swap(MxArray& rhs)  {
+    if (this != &rhs) {
+      mxArray* array = rhs.array_;
+      bool owner = rhs.owner_;
+      rhs.array_ = array_;
+      rhs.owner_ = owner_;
+      array_ = array;
+      owner_ = owner;
+    }
+  }
   /** Reset an mxArray to a const mxArray*.
    *
    * Caller must be VERY careful with this, as the behavior is undefined when
@@ -126,18 +153,39 @@ public:
    *     foo.toInt(); // Error!
    * @endcode
    */
-  void reset(const mxArray* array = NULL);
+  void reset(const mxArray* array = NULL) {
+    if (array_ && owner_)
+      mxDestroyArray(array_);
+    array_ = const_cast<mxArray*>(array);
+    owner_ = false;
+  }
   /** Reset an mxArray.
    */
-  void reset(mxArray* array);
+  void reset(mxArray* array) {
+    if (array_ && owner_)
+      mxDestroyArray(array_);
+    array_ = array;
+    owner_ = array;
+  }
   /** Release managed mxArray* pointer, or clone if not owner.
    * @return Unmanaged mxArray*. Always caller must destroy.
    */
-  mxArray* release();
+  mxArray* release()  {
+    MEXPLUS_CHECK_NOTNULL(array_);
+    mxArray* array = (owner_) ? array_ : clone();
+    array_ = NULL;
+    owner_ = false;
+    return array;
+  }
   /** Clone mxArray. This always allocates new mxArray*.
    * @return Unmanaged mxArray*. Always caller must destroy.
    */
-  mxArray* clone() const;
+  mxArray* clone() const {
+    MEXPLUS_CHECK_NOTNULL(array_);
+    mxArray* array = mxDuplicateArray(array_);
+    MEXPLUS_CHECK_NOTNULL(array);
+    return array;
+  }
   /** Conversion to const mxArray*.
    * @return const mxArray* pointer.
    */
@@ -158,7 +206,11 @@ public:
    * @param rows Number of rows.
    * @param columns Number of cols.
    */
-  static mxArray* Logical(int rows = 1, int columns = 1);
+  static mxArray* Logical(int rows = 1, int columns = 1) {
+    mxArray* logical_array = mxCreateLogicalMatrix(rows, columns);
+    MEXPLUS_CHECK_NOTNULL(logical_array);
+    return logical_array;
+  }
   /** Create a new cell matrix.
    * @param rows Number of rows.
    * @param columns Number of cols.
@@ -166,11 +218,16 @@ public:
    * Example:
    * @code
    *     MxArray cell_array = MxArray::Cell(1, 2);
-   *     cell_array.set(0, MxArray(1).release());
-   *     cell_array.set(1, MxArray("another value").release());
+   *     cell_array.set(0, 1);
+   *     cell_array.set(1, "another value");
+   *     plhs[0] = cell_array.release();
    * @endcode
    */
-  static mxArray* Cell(int rows = 1, int columns = 1);
+  static mxArray* Cell(int rows = 1, int columns = 1) {
+    mxArray* cell_array = mxCreateCellMatrix(rows, columns);
+    MEXPLUS_CHECK_NOTNULL(cell_array);
+    return cell_array;
+  }
   /** Generic constructor for a struct matrix.
    * @param fields field names.
    * @param nfields number of field names.
@@ -181,20 +238,37 @@ public:
    * @code
    *     const char* fields[] = {"field1", "field2"};
    *     MxArray struct_array(MxArray::Struct(2, fields));
-   *     struct_array.set("field1", MxArray(1).release());
-   *     struct_array.set("field2", MxArray("field2 value").release());
+   *     struct_array.set("field1", 1);
+   *     struct_array.set("field2", "field2 value");
+   *     plhs[0] = struct_array.release();
    * @endcode
    */
   static mxArray* Struct(int nfields = 0,
                          const char** fields = NULL,
                          int rows = 1,
-                         int columns = 1);
+                         int columns = 1) {
+    mxArray* struct_array = mxCreateStructMatrix(rows,
+                                                 columns,
+                                                 nfields,
+                                                 fields);
+    MEXPLUS_CHECK_NOTNULL(struct_array);
+    return struct_array;
+  }
   /** mxArray* importer methods.
    */
   template <typename T>
   static mxArray* from(const T& value) { return fromInternal<T>(value); }
-  static mxArray* from(const char* value);
-  static mxArray* from(int32_t value);
+  static mxArray* from(const char* value) {
+    mxArray* array = mxCreateString(value);
+    MEXPLUS_CHECK_NOTNULL(array);
+    return array;
+  }
+  static mxArray* from(int32_t value) {
+    mxArray* array = mxCreateNumericMatrix(1, 1, mxINT32_CLASS, mxREAL);
+    MEXPLUS_CHECK_NOTNULL(array);
+    *reinterpret_cast<int32_t*>(mxGetData(array)) = value;
+    return array;
+  }
   /** mxArray* exporter methods.
    */
   template <typename T>
@@ -244,7 +318,15 @@ public:
   static void set(mxArray* array, mwIndex index, const T& value) {
     setInternal<T>(array, index, value);
   }
-  static void set(mxArray* array, mwIndex index, mxArray* value);
+  static void set(mxArray* array, mwIndex index, mxArray* value) {
+    MEXPLUS_CHECK_NOTNULL(array);
+    MEXPLUS_CHECK_NOTNULL(value);
+    MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
+    MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+                   "Index out of range: %u.",
+                   index);
+    mxSetCell(array, index, value);
+  }
   template <typename T>
   static void set(mxArray* array,
                   const std::string& field,
@@ -255,7 +337,19 @@ public:
   static void set(mxArray* array,
                   const std::string& field,
                   mxArray* value,
-                  mwIndex index = 0);
+                  mwIndex index = 0) {
+    MEXPLUS_CHECK_NOTNULL(array);
+    MEXPLUS_CHECK_NOTNULL(value);
+    MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
+    MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+                   "Index out of range: %u.",
+                   index);
+    if (!mxGetField(array, index, field.c_str()))
+      MEXPLUS_ASSERT(mxAddField(array, field.c_str()) >= 0,
+                     "Failed to create a field '%s'",
+                     field.c_str());
+    mxSetField(array, index, field.c_str(), value);
+  }
 
   /** Convert MxArray to a specified type.
    */
@@ -375,7 +469,10 @@ public:
    * @param index index of the element.
    * @param value cell element to be inserted.
    */
-  void set(mwIndex index, mxArray* value);
+  void set(mwIndex index, mxArray* value) {
+  MEXPLUS_ASSERT(isOwner(), "Must be an owner to set.");
+    set(array_, index, value);
+  }
   /** Struct element write accessor.
    * @param field field name of the struct array.
    * @param value value of the field.
@@ -391,12 +488,29 @@ public:
    * @param value value of the field to be inserted.
    * @param index linear index of the struct array element.
    */
-  void set(const std::string& field, mxArray* value, mwIndex index = 0);
+  void set(const std::string& field, mxArray* value, mwIndex index = 0) {
+    MEXPLUS_ASSERT(isOwner(), "Must be an owner to set.");
+    set(array_, field, value, index);
+  }
   /** Get raw data pointer.
    * @return pointer T*. If MxArray is not compatible, return NULL.
    */
   template <typename T>
   T* getData() const;
+  mxLogical* getLogicals() const {
+    MEXPLUS_CHECK_NOTNULL(array_);
+    MEXPLUS_ASSERT(isLogical(),
+                   "Expected a logical array but %s.",
+                   className().c_str());
+    return mxGetLogicals(array_);
+  }
+  mxChar* getChars() const {
+    MEXPLUS_CHECK_NOTNULL(array_);
+    MEXPLUS_ASSERT(isChar(), 
+                   "Expected a char array but %s.",
+                   className().c_str());
+    return mxGetChars(array_);
+  }
   /** Class ID of mxArray.
    */
   inline mxClassID classID() const { return mxGetClassID(array_); }
@@ -432,11 +546,21 @@ public:
    * @param index index of the struct array.
    * @return std::string.
    */
-  std::string fieldName(int index) const;
+  std::string fieldName(int index) const {
+    const char* field = mxGetFieldNameByNumber(array_, index);
+    MEXPLUS_ASSERT(field, "Failed to get field name at %d.", index);
+    return std::string(field);
+  }
   /** Get field names of a struct array.
    * @params field_nams std::vector<std::string> of struct field names.
    */
-  std::vector<std::string> fieldNames() const;
+  std::vector<std::string> fieldNames() const {
+    MEXPLUS_ASSERT(isStruct(), "Expected a struct array.");
+    std::vector<std::string> fields(fieldSize());
+    for (int i = 0; i < fields.size(); ++i)
+      fields[i] = fieldName(i);
+    return fields;
+  }
   /** Number of elements in IR, PR, and PI arrays.
    */
   inline mwSize nonZeroMax() const { return mxGetNzmax(array_); }
@@ -445,12 +569,19 @@ public:
    * @param column index of the second dimension of the array.
    * @return linear offset of the specified subscript index.
    */
-  mwIndex subscriptIndex(mwIndex row, mwIndex column) const;
+  mwIndex subscriptIndex(mwIndex row, mwIndex column) const {
+    MEXPLUS_ASSERT(row >= rows() || column >= cols(),
+                   "Subscript is out of range.");
+    mwIndex subscripts[] = {row, column};
+    return mxCalcSingleSubscript(array_, 2, subscripts);
+  }
   /** Offset from first element to desired element.
    * @param si subscript index of the array.
    * @return linear offset of the specified subscript index.
    */
-  mwIndex subscriptIndex(const std::vector<mwIndex>& subscripts) const;
+  mwIndex subscriptIndex(const std::vector<mwIndex>& subscripts) const {
+    return mxCalcSingleSubscript(array_, subscripts.size(), &subscripts[0]);
+  }
   /** Determine whether input is cell array.
    */
   inline bool isCell() const { return mxIsCell(array_); }
@@ -954,8 +1085,6 @@ T* MxArray::getData() const {
                  typeid(T).name());
   return reinterpret_cast<T*>(mxGetData(array_));
 }
-template <> mxLogical* MxArray::getData() const;
-template <> mxChar* MxArray::getData() const;
 
 template <typename T>
 T MxArray::at(mwIndex row, mwIndex column) const {
