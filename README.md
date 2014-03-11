@@ -4,7 +4,7 @@ MEXPLUS
 C++ Matlab MEX development kit.
 
 The kit contains a couple of C++ wrappers to make MEX development easy in
-Matlab. There are 3 major components of the development kit.
+Matlab. There are 3 major components in the development kit.
 
  * `mexplus/mxarray.h` MxArray data conversion and access class.
  * `mexplus/arguments.h` MEX function argument wrappers.
@@ -294,7 +294,8 @@ MEX_DEFINE(myfunc2) (int nlhs, mxArray* plhs[],
 MEX_MAIN
 ```
 
-Notice how `MEX_DEFINE` and `MEX_MAIN` macros are used. Then build this file.
+Notice how `MEX_DEFINE` and `MEX_MAIN` macros are used. Then build this file
+in Matlab.
 
 ```matlab
 mex -Iinclude mylibrary.cc
@@ -303,7 +304,7 @@ mex -Iinclude mylibrary.cc
 The build MEX binaries can now calls two entry points by the first command
 argument.
 
-```
+```matlab
 mylibrary('myfunc', varargin{:})  % myfunc is called.
 mylibrary('myfunc2', varargin{:}) % myfunc2 is called.
 ```
