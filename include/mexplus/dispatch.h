@@ -45,8 +45,9 @@
  *     MEX_DISPATCH
  *
  * This file is the implementation of the mex function. The MEX_DEFINE macro
- * defines an entry point of the function. MEX_DISPATCH macro at the end inserts
- * necessary codes to dispatch function calls to an appropriate function.
+ * defines an entry point of the function. MEX_DISPATCH macro at the end
+ * inserts necessary codes to dispatch function calls to an appropriate
+ * function.
  *
  * Similarly, you can write another pair of .m (and C++) file to add to your
  * library. You may split MEX_DEFINE macros in multiple C++ files. In that
