@@ -189,12 +189,14 @@ public:
     InstanceMap* instances = getInstances();
     intptr_t id = reinterpret_cast<intptr_t>(instance);
     instances->insert(std::make_pair(id, std::shared_ptr<T>(instance)));
+    mexLock();
     return id;
   }
   /** Destroy an instance.
    */
   static void destroy(intptr_t id) {
     getInstances()->erase(id);
+    mexUnlock();
   }
   static void destroy(const mxArray* pointer) {
     destroy(getIntPointer(pointer));
@@ -234,6 +236,8 @@ public:
   /** Clear all session instances.
    */
   static void clear() {
+    for (int i = 0; i < getInstances()->size(); ++i)
+      mexUnlock();
     getInstances()->clear();
   }
 
