@@ -30,22 +30,22 @@ public:
   }
 };
 
-// Explicitly declare an instance manager for Database.
+// Instance manager for Database.
 template class mexplus::Session<Database>;
 
 namespace {
 
-// Defines MEX API for open.
-MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
-                  int nrhs, const mxArray* prhs[]) {
+// Defines MEX API for new.
+MEX_DEFINE(new) (int nlhs, mxArray* plhs[],
+                 int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, plhs, 1);
   output.set(0, Session<Database>::create(new Database(input.get<string>(0))));
 }
 
-// Defines MEX API for close.
-MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
-                   int nrhs, const mxArray* prhs[]) {
+// Defines MEX API for delete.
+MEX_DEFINE(delete) (int nlhs, mxArray* plhs[],
+                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, plhs, 0);
   Session<Database>::destroy(input.get(0));

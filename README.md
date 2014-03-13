@@ -10,7 +10,7 @@ easy in Matlab. There are 3 major components in the development kit.
  * `mexplus/arguments.h` MEX function argument wrappers.
  * `mexplus/dispatch.h` Helper to dispatch function calls within a MEX binary.
 
-All classes are located in `mexplus` namespace, and you can use them by
+All classes are located in `mexplus` namespace, and you can use all of them by
 including the `mexplus.h` header file.
 
 Example
@@ -29,13 +29,13 @@ class keeps instances of `Database` objects between MEX calls, allowing the
 MEX binary to be stateful.
 
 ```c++
-// Demonstration of Hypothetical MEX database API.
+// Demonstration of a hypothetical MEX database API.
 #include <mexplus.h>
 
 using namespace std;
 using namespace mexplus;
 
-// Hypothetical database class.
+// Hypothetical database class to be wrapped.
 class Database {
 public:
   Database(const string& filename);
@@ -44,12 +44,12 @@ public:
   // Other methods...
 };
 
-// This initialize Database instance storage.
+// This initializes the instance storage for Database.
 template class mexplus::Session<Database>;
 
 // Create a new instance of Database and return its session id.
-MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
-                  int nrhs, const mxArray* prhs[]) {
+MEX_DEFINE(new) (int nlhs, mxArray* plhs[],
+                 int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, plhs, 1);
   output.set(0, Session<Database>::create(
@@ -57,8 +57,8 @@ MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
 }
 
 // Delete the Database instance specified by its id.
-MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
-                   int nrhs, const mxArray* prhs[]) {
+MEX_DEFINE(delete) (int nlhs, mxArray* plhs[],
+                    int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, plhs, 0);
   Session<Database>::destroy(input.get(0));
@@ -94,12 +94,12 @@ methods
   function this = Database(filename)
   %DATABASE Create a new database.
     assert(ischar(filename));
-    this.id_ = Database_('open', filename);
+    this.id_ = Database_('new', filename);
   end
 
   function delete(this)
   %DELETE Destructor.
-    Database_('close', this.id_);
+    Database_('delete', this.id_);
   end
 
   function result = query(this, key)
@@ -371,3 +371,17 @@ Run the following to run a test of mexplus.
 ```matlab
 make test
 ```
+
+TODO
+----
+
+_General_
+
+ * Add a script to generate wrapper templates.
+  * Maybe, use a compiler front-end to automatically generate a wrapper?
+ * Runtime dependency checker.
+
+_MxArray_
+
+ * N-D array composition and decomposition.
+ * Sparse arrays.

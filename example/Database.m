@@ -23,12 +23,12 @@ methods
   function this = Database(filename)
   %DATABASE Create a new database.
     assert(ischar(filename));
-    this.id_ = Database_('open', filename);
+    this.id_ = Database_('new', filename);
   end
 
   function delete(this)
   %DELETE Destructor.
-    Database_('close', this.id_);
+    Database_('delete', this.id_);
   end
 
   function result = query(this, key)
