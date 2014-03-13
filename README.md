@@ -366,7 +366,7 @@ pattern is very useful to design an API for C++ class objects.
 Test
 ----
 
-Run the following to run a test of mexplus.
+Run the following to test mexplus.
 
 ```matlab
 make test
