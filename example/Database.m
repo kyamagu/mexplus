@@ -14,15 +14,6 @@ classdef Database < handle
 %
 % See `make.m` for details.
 %
-% Usage
-% -----
-%
-%    addpath example;
-%    database = Database('myDatabase');
-%    database.query('Something');
-%    clear database;
-%    disp(Database.getMetadata());
-%
 
 properties (Access = private)
   id_ % ID of the session.
@@ -44,6 +35,12 @@ methods
   %QUERY Query something to the database.
     assert(isscalar(this));
     result = Database_('query', this.id_, key);
+  end
+
+  function put(this, key, value)
+  %PUT Save something to the database.
+    assert(isscalar(this));
+    Database_('put', this.id_, key, value);
   end
 end
 

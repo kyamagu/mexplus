@@ -3,7 +3,8 @@ function runDatabase
 
   % Using a database object.
   database = Database('myDatabase.db');
-  database.query('some-key');
+  value = database.query('some-key');
+  database.put('another-key', 'foo');
   clear database;
 
   % Using static methods.
