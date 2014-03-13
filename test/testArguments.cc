@@ -46,6 +46,8 @@ void testInputsSingleFormatOptionsDefault() {
     MAKE_VALUE(mxCreateString("Text input."))
   );
   InputArguments input(rhs.size(), &rhs[0], 2, 2, "Option1", "Option2");
+  EXPECT(input[0]);
+  EXPECT(input[1]);
   EXPECT(input.get<double>(0) == 3.2);
   EXPECT(input.get<string>(1) == "Text input.");
   EXPECT(input.get<double>("Option1", -1) == -1);
@@ -110,6 +112,11 @@ void testOutputArguments() {
   output1.set(1, lhs[1]);
   output2.set(0, lhs[0]);
   output2.set(1, lhs[1]);
+  EXPECT(output0[0]);
+  EXPECT(output1[0]);
+  EXPECT(output1[1]);
+  EXPECT(output2[0]);
+  output0[0] = lhs[0];
 }
 
 } // namespace

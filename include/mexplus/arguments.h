@@ -5,7 +5,7 @@
  *
  * % myFunction.m
  * function result = myFunction(arg1, arg2, varargin)
- * 
+ *
  * // myFunction.cc
  * #include "mexplus/arguments.h"
  * using namespace std;
@@ -329,7 +329,7 @@ public:
   /** Const square bracket operator.
    */
   mxArray* const& operator[] (size_t index) const {
-    if (index < nlhs_)
+    if (index >= nlhs_)
       mexErrMsgIdAndTxt("mexplus:arguments:error",
                         "Output index out of range: %d.",
                         index);
@@ -338,7 +338,7 @@ public:
   /** Mutable square bracket operator.
    */
   mxArray*& operator[] (size_t index) {
-    if (index < nlhs_)
+    if (index >= nlhs_)
       mexErrMsgIdAndTxt("mexplus:arguments:error",
                         "Output index out of range: %d.",
                         index);
