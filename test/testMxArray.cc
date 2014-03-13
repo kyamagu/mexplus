@@ -173,6 +173,10 @@ void testMxArrayString() {
   EXPECT(value2);
   EXPECT(value3);
   EXPECT(value4);
+  EXPECT(value.isChar());
+  EXPECT(value2.isChar());
+  EXPECT(value3.isCell());
+  EXPECT(value4.isCell());
   EXPECT(value.to<string>() == "string value.");
   EXPECT(value2.to<string>() == "another string.");
   vector<string> returned_value3 = value3.to<vector<string> >();

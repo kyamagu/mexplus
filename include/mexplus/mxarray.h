@@ -284,7 +284,7 @@ public:
   /** mxArray* element reader methods.
    */
   template <typename T>
-  static T at(const mxArray* array, mwIndex index) { 
+  static T at(const mxArray* array, mwIndex index) {
     T value;
     atInternal<T>(array, index, &value);
     return value;
@@ -479,7 +479,7 @@ public:
   }
   mxChar* getChars() const {
     MEXPLUS_CHECK_NOTNULL(array_);
-    MEXPLUS_ASSERT(isChar(), 
+    MEXPLUS_ASSERT(isChar(),
                    "Expected a char array but %s.",
                    className().c_str());
     return mxGetChars(array_);
