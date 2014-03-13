@@ -53,7 +53,7 @@ MEX_DEFINE(getEnvironment) (int nlhs, mxArray* plhs[],
                             int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 0);
   OutputArguments output(nlhs, plhs, 1);
-  output.set(0, MxArray::from(environment));
+  output.set(0, environment);
 }
 
 // Defines MEX API for getEnvironment.
@@ -61,7 +61,7 @@ MEX_DEFINE(setEnvironment) (int nlhs, mxArray* plhs[],
                             int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, plhs, 0);
-  MxArray::to(input.get(0), &environment);
+  input.get(0, &environment);
 }
 
 } // namespace
