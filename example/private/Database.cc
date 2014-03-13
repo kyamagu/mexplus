@@ -5,8 +5,7 @@
  *
  */
 
-#include <mexplus/arguments.h>
-#include <mexplus/dispatch.h>
+#include <mexplus.h>
 
 using namespace std;
 using namespace mexplus;
@@ -72,4 +71,4 @@ MEX_DEFINE(put) (int nlhs, mxArray* plhs[],
 
 } // namespace
 
-MEX_MAIN // Don't forget to add this if MEX_DEFINE() is used.
+MEX_DISPATCH // Don't forget to add this if MEX_DEFINE() is used.

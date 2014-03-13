@@ -4,7 +4,7 @@
  * file. Two files are required to create a new mex function. Suppose you are
  * creating two MEX functions `myfunc` and `myfunc2`. Then, make the following
  * files.
- * 
+ *
  * myfunc.m
  *
  *     function output_args = myfunc( varargin )
@@ -14,7 +14,7 @@
  *     %
  *       output_args = mylibrary(mfilename, varargin{:})
  *     end
- * 
+ *
  * myfunc2.m
  *
  *     function output_args = myfunc( varargin )
@@ -42,15 +42,15 @@
  *       ...
  *     }
  *
- *     MEX_MAIN
+ *     MEX_DISPATCH
  *
  * This file is the implementation of the mex function. The MEX_DEFINE macro
- * defines an entry point of the function. MEX_MAIN macro at the end inserts
+ * defines an entry point of the function. MEX_DISPATCH macro at the end inserts
  * necessary codes to dispatch function calls to an appropriate function.
  *
  * Similarly, you can write another pair of .m (and C++) file to add to your
  * library. You may split MEX_DEFINE macros in multiple C++ files. In that
- * case, have MEX_MAIN macro in one of the files.
+ * case, have MEX_DISPATCH macro in one of the files.
  *
  * Kota Yamaguchi 2014 <kyamagu@cs.stonybrook.edu>
  */
@@ -149,14 +149,14 @@ inline void CreateOperation(const std::string& name,
 /** Key-value storage to make a stateful MEX function.
  *
  *    #include <mexplus/dispatch.h>
- *  
+ *
  *    using namespace std;
  *    using namespace mexplus;
- *  
+ *
  *    class Database;
- *  
+ *
  *    template class Session<Database>;
- *  
+ *
  *    MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
  *                      int nrhs, const mxArray* prhs[]) {
  *      unique_ptr<Database> database(new Database(...));
@@ -164,14 +164,14 @@ inline void CreateOperation(const std::string& name,
  *      intptr_t session_id = Session<Database>::create(database.release());
  *      plhs[0] = mxCreateDoubleScalar(session_id);
  *    }
- *  
+ *
  *    MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
  *                       int nrhs, const mxArray* prhs[]) {
  *      intptr_t session_id = mxGetScalar(prhs[0]);
  *      Database* database = Session<Database>::get(session_id);
  *      database->query(...);
  *    }
- *  
+ *
  *    MEX_DEFINE(close) (int nlhs, mxArray* plhs[],
  *                       int nrhs, const mxArray* prhs[]) {
  *      intptr_t session_id = mxGetScalar(prhs[0]);
@@ -296,7 +296,7 @@ void Operation_##name::operator()
 
 /** Insert a function dispatching code. Use once per MEX binary.
  */
-#define MEX_MAIN \
+#define MEX_DISPATCH \
 void mexFunction(int nlhs, mxArray *plhs[], \
                  int nrhs, const mxArray *prhs[]) { \
   if (nrhs < 1 || !mxIsChar(prhs[0])) \

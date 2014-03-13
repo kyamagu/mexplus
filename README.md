@@ -3,14 +3,15 @@ MEXPLUS
 
 C++ Matlab MEX development kit.
 
-The kit contains a couple of C++ wrappers to make MEX development easy in
-Matlab. There are 3 major components in the development kit.
+The kit contains a couple of C++ classes and macros to make MEX development
+easy in Matlab. There are 3 major components in the development kit.
 
  * `mexplus/mxarray.h` MxArray data conversion and access class.
  * `mexplus/arguments.h` MEX function argument wrappers.
- * `mexplus/dispatch.h` Helper to make a stateful MEX binary.
+ * `mexplus/dispatch.h` Helper to dispatch function calls within a MEX binary.
 
-All classes are located in `mexplus` namespace.
+All classes are located in `mexplus` namespace, and you can use them by
+including the `mexplus.h` header file.
 
 Example
 -------
@@ -18,52 +19,17 @@ Example
 Suppose we have a Database class in C++ and will design a MEX interface to it.
 Create the following files.
 
-`Database.m`
-
-Matlab class interface file. Provides a wrapper to `Database_` MEX function in
-its methods, which is implemented in a C++ file.
-
-```matlab
-classdef Database < handle
-%DATABASE Hypothetical Matlab database API.
-properties (Access = private)
-  id_ % ID of the session.
-end
-
-methods
-  function this = Database(filename)
-  %DATABASE Create a new database.
-    assert(ischar(filename));
-    this.id_ = Database_('open', filename);
-  end
-
-  function delete(this)
-  %DELETE Destructor.
-    Database_('close', this.id_);
-  end
-
-  function result = query(this, key)
-  %QUERY Query to the database.
-    assert(isscalar(this));
-    result = Database_('query', this.id_, key);
-  end
-
-  % Other methods...
-end
-```
-
 `Database.cc`
 
 C++ Implementation of MEX function. Provide MEX entry points by `MEX_DEFINE`
-macro, and insert `MEX_MAIN` at the end. Notice how inputs and outputs are
-wrapped by mexplus `InputArguments` and `OutputArguments` class. The `Session` 
+macro, and insert `MEX_DISPATCH` at the end. Notice how inputs and outputs are
+wrapped by mexplus `InputArguments` and `OutputArguments` class. The `Session`
 class keeps instances of `Database objects` between MEX calls, allowing the
 MEX binary to be stateful.
 
 ```c++
 // Demonstration of Hypothetical MEX database API.
-#include <mexplus/arguments.h>
-#include <mexplus/dispatch.h>
+#include <mexplus.h>
 
 using namespace std;
 using namespace mexplus;
@@ -108,7 +74,41 @@ MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
 
 // Other entry points...
 
-MEX_MAIN
+MEX_DISPATCH
+```
+
+`Database.m`
+
+Matlab class interface file. Provides a wrapper to `Database_` MEX function in
+its methods, which is implemented in a C++ file.
+
+```matlab
+classdef Database < handle
+%DATABASE Hypothetical Matlab database API.
+properties (Access = private)
+  id_ % ID of the session.
+end
+
+methods
+  function this = Database(filename)
+  %DATABASE Create a new database.
+    assert(ischar(filename));
+    this.id_ = Database_('open', filename);
+  end
+
+  function delete(this)
+  %DELETE Destructor.
+    Database_('close', this.id_);
+  end
+
+  function result = query(this, key)
+  %QUERY Query to the database.
+    assert(isscalar(this));
+    result = Database_('query', this.id_, key);
+  end
+
+  % Other methods...
+end
 ```
 
 _Build_
@@ -317,10 +317,10 @@ MEX_DEFINE(myfunc2) (int nlhs, mxArray* plhs[],
   // Do another thing.
 }
 
-MEX_MAIN
+MEX_DISPATCH
 ```
 
-Notice how `MEX_DEFINE` and `MEX_MAIN` macros are used. Then build this file
+Notice how `MEX_DEFINE` and `MEX_DISPATCH` macros are used. Then build this file
 in Matlab.
 
 ```matlab

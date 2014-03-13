@@ -6,8 +6,7 @@
  *
  */
 
-#include <mexplus/arguments.h>
-#include <mexplus/dispatch.h>
+#include <mexplus.h>
 
 using namespace std;
 using namespace mexplus;

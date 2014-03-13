@@ -5,7 +5,7 @@ function make(command, varargin)
 %
 % Build MEX files in the project. Customize this file to change how to build
 % a project. By default, the script builds an example in the project directory,
-% `make clean` delete any built binary, and 
+% `make clean` delete any built binary, and
 %
 % Example
 % -------
@@ -17,6 +17,9 @@ function make(command, varargin)
   if nargin < 1, command = 'all'; end
 	root_dir = fileparts(mfilename('fullpath'));
   switch command
+    case 'all'
+      targets = [getTarget(root_dir), getTestTargets(root_dir)];
+      arrayfun(@(target)buildTarget(target, varargin{:}), targets);
     case 'clean'
       clear mex;
     	targets = [getTarget(root_dir), getTestTargets(root_dir)];
@@ -26,8 +29,13 @@ function make(command, varargin)
       arrayfun(@(target)buildTarget(target, varargin{:}), targets);
       run(fullfile(root_dir, 'test', 'testAll.m'));
     otherwise
-      targets = getTarget(root_dir);
-      arrayfun(@(target)buildTarget(target, varargin{:}), targets);
+      targets = [getTarget(root_dir), getTestTargets(root_dir)];
+      index = strcmp(strrep({targets.name}, [root_dir, filesep], ''), ...
+                     strrep(command, root_dir, ''));
+      if ~any(index)
+        error('make:unknownTarget', 'No rule to make %s.', command);
+      end
+      buildTarget(targets(index), varargin{:});
   end
 end
 
