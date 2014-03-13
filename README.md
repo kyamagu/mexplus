@@ -23,8 +23,9 @@ Create the following files.
 
 C++ Implementation of MEX function. Provide MEX entry points by `MEX_DEFINE`
 macro, and insert `MEX_DISPATCH` at the end. Notice how inputs and outputs are
-wrapped by mexplus `InputArguments` and `OutputArguments` class. The `Session`
-class keeps instances of `Database objects` between MEX calls, allowing the
+wrapped by mexplus `InputArguments` and `OutputArguments` class. They
+automatically convert majority of C++ types to/from `mxArray`. The `Session`
+class keeps instances of `Database` objects between MEX calls, allowing the
 MEX binary to be stateful.
 
 ```c++
@@ -120,6 +121,14 @@ depends on some of the C++11 features. In Linux, you might need to add `CFLAGS="
 
 ```matlab
 mex -Iinclude Database.cc -output Database_
+```
+
+After this, the Database class is available in Matlab.
+
+```matlab
+database = Database('mydatabase.db');
+result = database.query('something');
+clear database;
 ```
 
 See `example` directory for a complete demonstration.
