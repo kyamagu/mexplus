@@ -77,9 +77,10 @@ public:
   // Other methods...
 };
 
-// Create a new instance of Database and return its session id.
+// This initialize Database instance storage.
 template class mexplus::Session<Database>;
 
+// Create a new instance of Database and return its session id.
 MEX_DEFINE(open) (int nlhs, mxArray* plhs[],
                   int nrhs, const mxArray* prhs[]) {
   InputArguments input(nrhs, prhs, 1);
