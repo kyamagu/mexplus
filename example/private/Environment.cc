@@ -24,8 +24,8 @@ namespace mexplus {
  */
 template<>
 mxArray* MxArray::from(const Environment& value) {
-  const char* fields[] = {"code", "status"};
-  MxArray struct_array(MxArray::Struct(2, fields));
+  const char* kFields[] = {"code", "status"};
+  MxArray struct_array(MxArray::Struct(2, kFields));
   struct_array.set("code", value.code);
   struct_array.set("status", value.status);
   return struct_array.release();
