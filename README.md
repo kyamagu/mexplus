@@ -53,7 +53,7 @@ MEX_DEFINE(new) (int nlhs, mxArray* plhs[],
   InputArguments input(nrhs, prhs, 1);
   OutputArguments output(nlhs, plhs, 1);
   output.set(0, Session<Database>::create(
-      new Database(input.get<std::string>(0))));
+      new Database(input.get<string>(0))));
 }
 
 // Delete the Database instance specified by its id.
