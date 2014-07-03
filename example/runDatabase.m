@@ -5,6 +5,8 @@ function runDatabase
   database = Database('myDatabase.db');
   value = database.query('some-key');
   database.put('another-key', 'foo');
+  database.query('another-key');
+  
   clear database;
 
   % Using static methods.

@@ -4,7 +4,8 @@
  * Matlab.
  *
  */
-
+#include <map>
+#include <string>
 #include <mexplus.h>
 
 using namespace std;
@@ -12,6 +13,8 @@ using namespace mexplus;
 
 // Hypothetical database class to be MEXed.
 class Database {
+private:
+  std::map<std::string, std::string> db;
 public:
   // Database constructor.
   Database(const string& filename) {
@@ -22,11 +25,17 @@ public:
   // Query a record.
   string query(const string& key) const {
     mexPrintf("Querying '%s'.\n", key.c_str());
-    return key;
+    auto search  = db.find(key);
+    if (search != db.end()){
+      return search->second;
+    }else{
+      return "Not Found";
+    }
   }
   // Put a record.
   void put(const string& key, const string& value) {
     mexPrintf("Putting '%s':'%s'.\n", key.c_str(), value.c_str());
+    db.insert(pair<std::string, std::string>(key, value));
   }
 };
 
