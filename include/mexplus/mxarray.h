@@ -543,7 +543,7 @@ public:
    * @return linear offset of the specified subscript index.
    */
   mwIndex subscriptIndex(mwIndex row, mwIndex column) const {
-    MEXPLUS_ASSERT(row >= rows() || column >= cols(),
+    MEXPLUS_ASSERT(row < rows() && column < cols(),
                    "Subscript is out of range.");
     mwIndex subscripts[] = {row, column};
     return mxCalcSingleSubscript(array_, 2, subscripts);
