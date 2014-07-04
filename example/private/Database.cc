@@ -4,19 +4,15 @@
  * Matlab.
  *
  */
-#include <map>
-#include <string>
 #include <mexplus.h>
 
 using namespace std;
 using namespace mexplus;
 
-// Hypothetical database class to be MEXed.
+// Hypothetical database class to be MEXed. This example is a proxy to C++ map.
 class Database {
-private:
-  std::map<std::string, std::string> db;
 public:
-  // Database constructor.
+  // Database constructor. This is a stub.
   Database(const string& filename) {
     mexPrintf("Opened '%s'.\n", filename.c_str());
   }
@@ -25,18 +21,18 @@ public:
   // Query a record.
   string query(const string& key) const {
     mexPrintf("Querying '%s'.\n", key.c_str());
-    auto search  = db.find(key);
-    if (search != db.end()){
-      return search->second;
-    }else{
-      return "Not Found";
-    }
+    map<string, string>::const_iterator record  = records_.find(key);
+    return (record != records_.end()) ? record->second : "Not Found";
   }
   // Put a record.
   void put(const string& key, const string& value) {
     mexPrintf("Putting '%s':'%s'.\n", key.c_str(), value.c_str());
-    db.insert(pair<std::string, std::string>(key, value));
+    records_.insert(pair<string, string>(key, value));
   }
+
+private:
+  // Database implementation.
+  map<string, string> records_;
 };
 
 // Instance manager for Database.

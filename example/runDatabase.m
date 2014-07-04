@@ -4,9 +4,10 @@ function runDatabase
   % Using a database object.
   database = Database('myDatabase.db');
   value = database.query('some-key');
+  disp(value);
   database.put('another-key', 'foo');
-  database.query('another-key');
-  
+  value = database.query('another-key');
+  disp(value);
   clear database;
 
   % Using static methods.
