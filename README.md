@@ -13,6 +13,10 @@ easy in Matlab. There are 3 major components in the development kit.
 All classes are located in `mexplus` namespace, and you can use all of them by
 including the `mexplus.h` header file.
 
+The library depends on a few C++11 features, and might not be compatible with
+older compilers. For older `g++`, make sure to add `-std=c++0x` flag in the
+`CXXFLAGS` in the MEX options located at `$HOME/.matlab/$VERSION/mexopts.sh`.
+
 Example
 -------
 
