@@ -65,11 +65,30 @@ namespace mexplus {
  */
 class InputArguments {
 public:
+  /** Case-insensitive comparator for std::string.
+   */
+  struct CaseInsensitiveComparator {
+    struct CaseInsensitiveElementComparator {
+      bool operator() (const char& c1, const char& c2) const {
+          return tolower(c1) < tolower(c2);
+      }
+    };
+    bool operator() (const std::string & s1, const std::string & s2) const {
+      return std::lexicographical_compare(s1.begin(),
+                                          s1.end(),
+                                          s2.begin(),
+                                          s2.end(),
+                                          CaseInsensitiveElementComparator());
+    }
+  };
+
+  typedef std::map<std::string, const mxArray*, CaseInsensitiveComparator>
+      OptionMap;
   /** Definition of arguments.
    */
   typedef struct Definition_tag {
     std::vector<const mxArray*> mandatories;
-    std::map<std::string, const mxArray*> optionals;
+    OptionMap optionals;
   } Definition;
 
   /** Empty constructor.
@@ -182,9 +201,9 @@ private:
   /** Fill in optional arguments definition.
    */
   void fillOptionalDefinition(int option_size,
-                              std::map<std::string, const mxArray*>* optionals,
+                              OptionMap* optionals,
                               va_list variable_list) {
-  for (int i = 0; i < option_size; ++i) {
+    for (int i = 0; i < option_size; ++i) {
       const char* option_name = va_arg(variable_list, const char*);
       (*optionals)[std::string(option_name)] = NULL;
     }
