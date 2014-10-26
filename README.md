@@ -173,8 +173,7 @@ file in Matlab.
 mex -Iinclude mylibrary.cc
 ```
 
-The build MEX binaries can now calls two entry points by the first command
-argument.
+The built MEX binary can now call two entries by the first argument.
 
 ```matlab
 mylibrary('myfunc', varargin{:})  % myfunc is called.
@@ -196,8 +195,9 @@ or,
     +mylibrary/myfunc2.m
     +mylibrary/private/mylibrary.mex*
 
-Inside of `myfunc.m` and `myfunc2.m`, call the `mylibrary` MEX function. This
-design pattern is very useful to wrap a C++ class in Matlab.
+Inside of `myfunc.m` and `myfunc2.m`, call the `mylibrary` MEX binary. This
+design pattern is useful to wrap a C++ class in Matlab. See the `example`
+directory in the package.
 
 Parsing function arguments
 --------------------------
