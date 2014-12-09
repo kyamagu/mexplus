@@ -14,8 +14,9 @@ All classes are located in `mexplus` namespace, and you can use all of them by
 including the `mexplus.h` header file.
 
 The library depends on a few C++11 features, and might not be compatible with
-older compilers. For older `g++`, make sure to add `-std=c++0x` flag in the
-`CXXFLAGS` in the MEX options located at `$HOME/.matlab/$VERSION/mexopts.sh`.
+older compilers. For older `g++`, make sure to add `-std=c++11` flag in the
+`CXXFLAGS` in the MEX options located at `$HOME/.matlab/$VERSION/mexopts.sh`,
+or in Matlab R2014a or later, at `$HOME/.matlab/$VERSION/mex_C++_$ARCH.xml`.
 
 Example
 -------
@@ -138,7 +139,7 @@ clear database;
 The development kit also contains `make.m` build function to make a build
 process easier. Customize this file to build your own MEX interface. The kit
 depends on some of the C++11 features. In Linux, you might need to add
-`CFLAGS="$CFLAGS -std=c++01x"` to `mex` command.
+`CXXFLAGS="$CXXFLAGS -std=c++11"` to `mex` command.
 
 See `example` directory for a complete demonstration.
 
@@ -174,6 +175,10 @@ mex -Iinclude mylibrary.cc
 ```
 
 The built MEX binary can now call two entries by the first argument.
+
+Note that `MEX_DISPATCH` is only required per MEX binary. If you split the
+`MEX_DEFINE` entries across multiple files, you only need to instantiate
+`MEX_DISPATCH` in one file.
 
 ```matlab
 mylibrary('myfunc', varargin{:})  % myfunc is called.
@@ -377,12 +382,21 @@ namespace mexplus {
 // Define two template specializations.
 template <>
 mxArray* MxArray::from(const MyObject& value) {
-  // Write your conversion code.
+  // Write your conversion code. For example,
+  MxArray struct_array = MxArray::Struct();
+  struct_array.set("x", value.x);
+  struct_array.set("y", value.y);
+  // And so on...
+  return struct_array.release();
 }
 
 template <>
 void MxArray::to(const mxArray* array, MyObject* value) {
-  // Write your conversion code.
+  // Write your conversion code. For example,
+  MxArray struct_array
+  value->x = struct_array.at<double>("x");
+  value->y = struct_array.at<double>("y");
+  // And so on...
 }
 } // namespace mexplus
 
@@ -403,6 +417,13 @@ Run the following to test MEXPLUS.
 ```matlab
 make test
 ```
+
+Known issues
+------------
+
+ * Matlab keeps a string in `uint16` while the `std::string` in C++ is actually
+   `std::basic_string<char>`. Because of this, signed integers might break
+   if saved inside `std::string`.
 
 TODO
 ----
