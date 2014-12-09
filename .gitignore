@@ -3,3 +3,4 @@
 *~
 *.mex*
 .DS_Store
+mexopts.sh

@@ -6,6 +6,7 @@ function testAll
   testArguments;
   testDispatch;
   testSession;
+  testString;
 end
 
 function expectError(identifier, function_handle)
@@ -19,7 +20,7 @@ function expectError(identifier, function_handle)
 end
 
 function testDispatch
-%DOTESTDISPATCH
+%TESTDISPATCH
   testDispatch_('foo');
   expectError('mexplus:dispatch:argumentError', @()testDispatch_());
   expectError('mexplus:dispatch:argumentError', @()testDispatch_('baz'));
@@ -27,7 +28,7 @@ function testDispatch
 end
 
 function testSession
-%DOTESTSESSION
+%TESTSESSION
   id = testSession_('create');
   testSession_('get', id);
   expectError('mexplus:session:notFound', @()testSession_('get', id + 1));
@@ -38,4 +39,19 @@ function testSession
   assert(~testSession_('exist', id));
   testSession_('clear');
   fprintf('PASS: %s\n', 'testSession');
+end
+
+function testString
+%TESTSTRING
+  fixtures = {char([0, 127, 128, 255]), uint8([0, 127, 128, 255])};
+  for i = 1:numel(fixtures)
+    value = fixtures{i};
+    value_type = class(value);
+    %fprintf(' %d', value(:)); fprintf('\n');
+    returned_value = cast(testString_(fixtures{i}), value_type);
+    %fprintf(' %d', returned_value(:)); fprintf('\n');
+    assert(numel(returned_value) == numel(value) && ...
+           all(returned_value(:) == value(:)));
+  end
+  fprintf('PASS: %s\n', 'testString');
 end

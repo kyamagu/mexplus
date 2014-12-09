@@ -681,7 +681,15 @@ private:
   static mxArray* fromInternal(const typename std::enable_if<
       std::is_same<typename MxTypes<
         typename Container::value_type>::array_type, mxChar>::value &&
-      std::is_compound<Container>::value,
+      std::is_compound<Container>::value &&
+      std::is_signed<typename Container::value_type>::value,
+      Container>::type& value);
+  template <typename Container>
+  static mxArray* fromInternal(const typename std::enable_if<
+      std::is_same<typename MxTypes<
+        typename Container::value_type>::array_type, mxChar>::value &&
+      std::is_compound<Container>::value &&
+      !std::is_signed<typename Container::value_type>::value,
       Container>::type& value);
   template <typename T>
   static mxArray* fromInternal(const typename std::enable_if<
@@ -753,9 +761,42 @@ private:
   static void assignTo(const mxArray* array, mwIndex index, R* value) {
     *value = *(reinterpret_cast<T*>(mxGetData(array)) + index);
   }
+  template <typename R>
+  static void assignCharTo(const mxArray* array,
+                           mwIndex index,
+                           typename std::enable_if<
+                             std::is_signed<R>::value,
+                             R>::type* value) {
+    typedef typename std::make_signed<mxChar>::type SignedMxChar;
+    *value = *(reinterpret_cast<SignedMxChar*>(mxGetChars(array)) + index);
+  }
+  template <typename R>
+  static void assignCharTo(const mxArray* array,
+                           mwIndex index,
+                           typename std::enable_if<
+                             !std::is_signed<R>::value,
+                             R>::type* value) {
+    *value = *(mxGetChars(array) + index);
+  }
   template <typename T, typename R>
   static void assignTo(const mxArray* array, R* value) {
     T* data_pointer = reinterpret_cast<T*>(mxGetData(array));
+    value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
+  }
+  template <typename R>
+  static void assignStringTo(const mxArray* array, typename std::enable_if<
+      std::is_signed<typename R::value_type>::value,
+      R>::type* value) {
+    typedef typename std::make_signed<mxChar>::type SignedMxChar;
+    SignedMxChar* data_pointer = reinterpret_cast<SignedMxChar*>(
+        mxGetChars(array));
+    value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
+  }
+  template <typename R>
+  static void assignStringTo(const mxArray* array, typename std::enable_if<
+      !std::is_signed<typename R::value_type>::value,
+      R>::type* value) {
+    mxChar* data_pointer = mxGetChars(array);
     value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
   }
   template <typename T>
@@ -776,8 +817,25 @@ private:
   static void assignFrom(mxArray* array, mwIndex index, const T& value) {
     *(reinterpret_cast<R*>(mxGetData(array)) + index) = value;
   }
+  template <typename T>
+  static void assignCharFrom(mxArray* array,
+                             mwIndex index,
+                             const typename std::enable_if<
+      std::is_integral<T>::value && std::is_signed<T>::value,
+      T>::type& value) {
+    *(mxGetChars(array) + index) = reinterpret_cast<const typename
+        std::make_unsigned<T>::type&>(value);
+  }
+  template <typename T>
+  static void assignCharFrom(mxArray* array,
+                             mwIndex index,
+                             const typename std::enable_if<
+      !std::is_integral<T>::value || !std::is_signed<T>::value,
+      T>::type& value) {
+    *(mxGetChars(array) + index) = value;
+  }
 
-  /** Const pointer to the mxArray C object.
+  /** Pointer to the mxArray C object.
    */
   mxArray* array_;
   /** Flag to enable resource management.
@@ -790,9 +848,9 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
     std::is_same<typename MxTypes<T>::array_type, mxNumeric>::value,
     T>::type& value) {
   mxArray* array = mxCreateNumericMatrix(1,
-                                 1,
-                                 MxTypes<T>::class_id,
-                                 MxTypes<T>::complexity);
+                                         1,
+                                         MxTypes<T>::class_id,
+                                         MxTypes<T>::complexity);
   MEXPLUS_CHECK_NOTNULL(array);
   *reinterpret_cast<T*>(mxGetData(array)) = value;
   return array;
@@ -806,9 +864,9 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
     Container>::type& value) {
   typedef typename Container::value_type ValueType;
   mxArray* array = mxCreateNumericMatrix(1,
-                                 value.size(),
-                                 MxTypes<ValueType>::class_id,
-                                 MxTypes<ValueType>::complexity);
+                                         value.size(),
+                                         MxTypes<ValueType>::class_id,
+                                         MxTypes<ValueType>::complexity);
   MEXPLUS_CHECK_NOTNULL(array);
   std::copy(value.begin(),
             value.end(),
@@ -830,7 +888,29 @@ template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
     std::is_same<typename MxTypes<typename Container::value_type>::array_type,
                  mxChar>::value &&
-    std::is_compound<Container>::value,
+    std::is_compound<Container>::value &&
+    std::is_signed<typename Container::value_type>::value,
+    Container>::type& value) {
+  typedef typename std::make_unsigned<typename Container::value_type>::type
+                   UnsignedValue;
+  const mwSize dimensions[] = {1, static_cast<mwSize>(value.size())};
+  mxArray* array = mxCreateCharArray(2, dimensions);
+  MEXPLUS_CHECK_NOTNULL(array);
+  mxChar* array_data = mxGetChars(array);
+  for (typename Container::const_iterator it = value.begin();
+       it != value.end();
+       ++it) {
+    *(array_data++) = reinterpret_cast<const UnsignedValue&>(*it);
+  }
+  return array;
+}
+
+template <typename Container>
+mxArray* MxArray::fromInternal(const typename std::enable_if<
+    std::is_same<typename MxTypes<typename Container::value_type>::array_type,
+                 mxChar>::value &&
+    std::is_compound<Container>::value &&
+    !std::is_signed<typename Container::value_type>::value,
     Container>::type& value) {
   const mwSize dimensions[] = {1, static_cast<mwSize>(value.size())};
   mxArray* array = mxCreateCharArray(2, dimensions);
@@ -895,7 +975,7 @@ void MxArray::toInternal(const mxArray* array, typename std::enable_if<
     case mxSINGLE_CLASS:  assignTo<float, T>(array, value); break;
     case mxDOUBLE_CLASS:  assignTo<double, T>(array, value); break;
     case mxLOGICAL_CLASS: assignTo<mxLogical, T>(array, value); break;
-    case mxCHAR_CLASS:    assignTo<mxChar, T>(array, value); break;
+    case mxCHAR_CLASS:    assignStringTo<T>(array, value); break;
     case mxCELL_CLASS:    assignCellTo<T>(array, value); break;
     // case mxSPARSE_CLASS:
     default:
@@ -938,7 +1018,7 @@ void MxArray::atInternal(const mxArray* array,
     case mxSINGLE_CLASS: assignTo<float, T>(array, index, value); break;
     case mxDOUBLE_CLASS: assignTo<double, T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignTo<mxLogical, T>(array, index, value); break;
-    case mxCHAR_CLASS: assignTo<mxChar, T>(array, index, value); break;
+    case mxCHAR_CLASS: assignCharTo<T>(array, index, value); break;
     case mxCELL_CLASS: assignCellTo<T>(array, index, value); break;
     // case mxSPARSE_CLASS:
     default:
@@ -998,7 +1078,7 @@ void MxArray::setInternal(mxArray* array,
     case mxUINT64_CLASS: assignFrom<uint64_t, T>(array, index, value); break;
     case mxSINGLE_CLASS: assignFrom<float, T>(array, index, value); break;
     case mxDOUBLE_CLASS: assignFrom<double, T>(array, index, value); break;
-    case mxCHAR_CLASS: assignFrom<mxChar, T>(array, index, value); break;
+    case mxCHAR_CLASS: assignCharFrom<T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignFrom<mxLogical, T>(array, index, value); break;
     case mxCELL_CLASS: mxSetCell(array, index, from(value)); break;
     default:
