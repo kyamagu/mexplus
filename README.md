@@ -393,7 +393,7 @@ mxArray* MxArray::from(const MyObject& value) {
 template <>
 void MxArray::to(const mxArray* array, MyObject* value) {
   // Write your conversion code. For example,
-  MxArray struct_array
+  MxArray struct_array(array);
   value->x = struct_array.at<double>("x");
   value->y = struct_array.at<double>("y");
   // And so on...
