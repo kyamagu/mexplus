@@ -172,7 +172,7 @@ public:
     if (definitions_.empty())
       mexErrMsgIdAndTxt("mexplus:arguments:error", "No format defined.");
     const Definition& definition = definitions_.begin()->second;
-    std::map<std::string, const mxArray*>::const_iterator entry =
+    OptionMap::const_iterator entry =
         definition.optionals.find(option_name);
     if (entry == definition.optionals.end())
       mexErrMsgIdAndTxt("mexplus:arguments:error",
@@ -238,7 +238,7 @@ private:
         error_message_.assign(message.str());
         return false;
       }
-      std::map<std::string, const mxArray*>::iterator entry =
+      OptionMap::iterator entry =
           definition->optionals.find(option_name);
       if (entry == definition->optionals.end()) {
         message << "Invalid option name: '" << option_name << "'.";
