@@ -325,6 +325,7 @@ public:
     MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                    "Index out of range: %u.",
                    index);
+    mxDestroyArray(mxGetCell(array, index));
     mxSetCell(array, index, value);
   }
   template <typename T>
@@ -344,11 +345,15 @@ public:
     MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                    "Index out of range: %u.",
                    index);
-    if (!mxGetField(array, index, field.c_str()))
-      MEXPLUS_ASSERT(mxAddField(array, field.c_str()) >= 0,
+    int field_num = mxGetFieldNumber(array, field.c_str());
+    if( field_num < 0 ) {
+      field_num = mxAddField(array, field.c_str());
+      MEXPLUS_ASSERT(field_num >= 0,
                      "Failed to create a field '%s'",
                      field.c_str());
-    mxSetField(array, index, field.c_str(), value);
+    }
+    mxDestroyArray(mxGetFieldByNumber(array, index, field_num));
+    mxSetFieldByNumber(array, index, field_num, value);
   }
 
   /** Convert MxArray to a specified type.
@@ -951,8 +956,10 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
   mwIndex index = 0;
   for (typename Container::const_iterator it = value.begin();
        it != value.end();
-       ++it)
+       ++it) {
+    mxDestroyArray(mxGetCell(array, index));
     mxSetCell(array, index++, from(*it));
+  }
   return array;
 }
 
@@ -1080,7 +1087,9 @@ void MxArray::setInternal(mxArray* array,
     case mxDOUBLE_CLASS: assignFrom<double, T>(array, index, value); break;
     case mxCHAR_CLASS: assignCharFrom<T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignFrom<mxLogical, T>(array, index, value); break;
-    case mxCELL_CLASS: mxSetCell(array, index, from(value)); break;
+    case mxCELL_CLASS: 
+      mxDestroyArray(mxGetCell(array, index));
+      mxSetCell(array, index, from(value)); break;
     default:
       MEXPLUS_ERROR("Cannot assign to %s array.", mxGetClassName(array));
   }
@@ -1097,6 +1106,7 @@ void MxArray::setInternal(mxArray* array,
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
+  mxDestroyArray(mxGetCell(array, index));
   mxSetCell(array, index, from(value));
 }
 
@@ -1110,11 +1120,15 @@ void MxArray::setInternal(mxArray* array,
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
-  if (!mxGetField(array, index, field.c_str()))
-    MEXPLUS_ASSERT(mxAddField(array, field.c_str()) >= 0,
+  int field_num = mxGetFieldNumber(array, field.c_str());
+  if( field_num < 0 ) {
+    field_num = mxAddField(array, field.c_str());
+    MEXPLUS_ASSERT(field_num >= 0,
                    "Failed to create a field '%s'",
                    field.c_str());
-  mxSetField(array, index, field.c_str(), from(value));
+  }
+  mxDestroyArray(mxGetFieldByNumber(array, index, field_num));
+  mxSetFieldByNumber(array, index, field_num, from(value));
 }
 
 template <typename T>
