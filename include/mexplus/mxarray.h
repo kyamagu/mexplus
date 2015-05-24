@@ -345,15 +345,15 @@ public:
     MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                    "Index out of range: %u.",
                    index);
-    int field_num = mxGetFieldNumber(array, field.c_str());
-    if( field_num < 0 ) {
-      field_num = mxAddField(array, field.c_str());
-      MEXPLUS_ASSERT(field_num >= 0,
+    int field_number = mxGetFieldNumber(array, field.c_str());
+    if (field_number < 0) {
+      field_number = mxAddField(array, field.c_str());
+      MEXPLUS_ASSERT(field_number >= 0,
                      "Failed to create a field '%s'",
                      field.c_str());
     }
-    mxDestroyArray(mxGetFieldByNumber(array, index, field_num));
-    mxSetFieldByNumber(array, index, field_num, value);
+    mxDestroyArray(mxGetFieldByNumber(array, index, field_number));
+    mxSetFieldByNumber(array, index, field_number, value);
   }
 
   /** Convert MxArray to a specified type.
@@ -1087,7 +1087,7 @@ void MxArray::setInternal(mxArray* array,
     case mxDOUBLE_CLASS: assignFrom<double, T>(array, index, value); break;
     case mxCHAR_CLASS: assignCharFrom<T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignFrom<mxLogical, T>(array, index, value); break;
-    case mxCELL_CLASS: 
+    case mxCELL_CLASS:
       mxDestroyArray(mxGetCell(array, index));
       mxSetCell(array, index, from(value)); break;
     default:
@@ -1120,15 +1120,15 @@ void MxArray::setInternal(mxArray* array,
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
-  int field_num = mxGetFieldNumber(array, field.c_str());
-  if( field_num < 0 ) {
-    field_num = mxAddField(array, field.c_str());
-    MEXPLUS_ASSERT(field_num >= 0,
+  int field_number = mxGetFieldNumber(array, field.c_str());
+  if (field_number < 0) {
+    field_number = mxAddField(array, field.c_str());
+    MEXPLUS_ASSERT(field_number >= 0,
                    "Failed to create a field '%s'",
                    field.c_str());
   }
-  mxDestroyArray(mxGetFieldByNumber(array, index, field_num));
-  mxSetFieldByNumber(array, index, field_num, from(value));
+  mxDestroyArray(mxGetFieldByNumber(array, index, field_number));
+  mxSetFieldByNumber(array, index, field_number, from(value));
 }
 
 template <typename T>
