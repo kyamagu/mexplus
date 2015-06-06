@@ -22,6 +22,7 @@ namespace {
 
 template <typename T>
 void testFundamentalScalar() {
+  //EXPECT(mexplus::MxArithmeticType<T>::value);
   T value = 2, value2 = 0;
   MxArray array(value);
   EXPECT(array);
@@ -52,6 +53,7 @@ void testFundamentalScalar() {
 /** Check all fundamental type conversions.
  */
 void testAllFundamentalScalar() {
+
   testFundamentalScalar<int8_t>();
   testFundamentalScalar<uint8_t>();
   testFundamentalScalar<int16_t>();
@@ -67,6 +69,58 @@ void testAllFundamentalScalar() {
   testFundamentalScalar<short>();
   testFundamentalScalar<long>();
   testFundamentalScalar<size_t>();
+}
+
+template <typename S>
+void testComplex() {
+  typedef std::complex<S> T;
+  T value(+1.1f,-3.4f), value2(0.0f,0.0f), value3(+2.2f,-5.6f);
+  typedef std::vector<T> ComplexVector;
+  MxArray array(value);
+  EXPECT(array);
+  EXPECT(array.size() == 1);
+  EXPECT(array.to<T>() == value);
+  EXPECT(array.at<T>(0) == value);
+  value2 = T(0.0f,0.0f);
+  array.to<T>(&value2);
+  EXPECT(value2 == value);
+  array.at<T>(0, &value2);
+  EXPECT(value2 == value);
+  array.set(0, value3);
+  EXPECT(array.to<T>() == value3);
+  EXPECT(array.at<T>(0) == value3);
+  mxArray* plhs = MxArray::from(value);
+  EXPECT(MxArray::at<T>(plhs, 0) == value);
+  EXPECT(MxArray::to<T>(plhs) == value);
+  value2 = T(0.0f,0.0f);
+  MxArray::to<T>(plhs, &value2);
+  EXPECT(value2 == value);
+  value2 = T(0.0f,0.0f);
+  MxArray::at<T>(plhs, 0, &value2);
+  EXPECT(value2 == value);
+
+  ComplexVector a, b(2);
+  b[0] = T(1.1f, 2.2f);
+  b[1] = T(3.3f, 4.4f);
+
+  array = MxArray(b);
+  a = b;
+  EXPECT( a == b );
+  EXPECT(mexplus::MxComplexOrArithmeticCompound<std::vector<S>>::value);
+  std::vector<S> magnitude = array.to<std::vector<S>>();
+  EXPECT( magnitude.size() == b.size() );
+  for( size_t i = 0; i < magnitude.size(); i++ )
+  {
+    EXPECT( magnitude[i] = ::sqrt(a[i].real() * a[i].real() + a[i].imag()*a[i].imag()) );
+  }
+
+
+  mxDestroyArray(plhs);
+}
+
+void testAllComplex(){
+  testComplex<float>();
+  testComplex<double>();
 }
 
 template <typename T>
@@ -93,7 +147,6 @@ void testFundamentalVector() {
 /** Check all fundamental vector conversions.
  */
 void testAllFundamentalVector() {
-  testFundamentalVector<int8_t>();
   testFundamentalVector<uint8_t>();
   testFundamentalVector<int16_t>();
   testFundamentalVector<uint16_t>();
@@ -229,6 +282,7 @@ void testMxArrayStruct() {
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   RUN_TEST(testAllFundamentalScalar);
   RUN_TEST(testAllFundamentalVector);
+  RUN_TEST(testAllComplex);
   RUN_TEST(testMxArrayMemory);
   RUN_TEST(testMxArrayString);
   RUN_TEST(testMxArrayCell);

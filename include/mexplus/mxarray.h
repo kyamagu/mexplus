@@ -51,10 +51,12 @@
 
 #include <mex.h>
 #include <mexplus/mxtypes.h>
+#include <cassert>
 #include <stdint.h>
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <algorithm>
 
 /** Macro definitions.
  */
@@ -196,7 +198,7 @@ public:
   /** Return true if owner.
    */
   inline bool isOwner() const { return owner_; }
-  /** Create a new numeric matrix.
+  /** Create a new numeric (real or complex) matrix.
    * @param rows Number of rows.
    * @param columns Number of cols.
    */
@@ -345,15 +347,15 @@ public:
     MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                    "Index out of range: %u.",
                    index);
-    int field_num = mxGetFieldNumber(array, field.c_str());
-    if( field_num < 0 ) {
-      field_num = mxAddField(array, field.c_str());
-      MEXPLUS_ASSERT(field_num >= 0,
+    int field_number = mxGetFieldNumber(array, field.c_str());
+    if (field_number < 0) {
+      field_number = mxAddField(array, field.c_str());
+      MEXPLUS_ASSERT(field_number >= 0,
                      "Failed to create a field '%s'",
                      field.c_str());
     }
-    mxDestroyArray(mxGetFieldByNumber(array, index, field_num));
-    mxSetFieldByNumber(array, index, field_num, value);
+    mxDestroyArray(mxGetFieldByNumber(array, index, field_number));
+    mxSetFieldByNumber(array, index, field_number, value);
   }
 
   /** Convert MxArray to a specified type.
@@ -566,6 +568,15 @@ public:
   /** Determine whether input is string array.
    */
   inline bool isChar() const { return mxIsChar(array_); }
+  /** Determine whether input is vector array.
+   */
+  inline bool isVector() const { 
+    mwSize rows  = (mwSize)mxGetM(array_);
+    mwSize cols  = (mwSize)mxGetN(array_);
+    mwSize nDims = (mwSize)mxGetNumberOfDimensions(array_);
+    
+    return nDims==2 && (rows==1 || cols==1);
+  }
   /** Determine whether array is member of specified class.
    */
   inline bool isClass(const char* name) const {
@@ -666,137 +677,273 @@ private:
    */
   MxArray& operator=(const MxArray& rhs);
   //MxArray& operator=(const MxArray& rhs) = delete;
-  /** Templated mxArray importers.
-   */
+
+
+
+  /*************************************************************/
+
+  /**             Templated mxArray importers                 **/
+
+  /*************************************************************/
+
+  /* fundamental numerics */
   template <typename T>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<T>::array_type, mxNumeric>::value,
-      T>::type& value);
-  template <typename Container>
-  static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<
-        typename Container::value_type>::array_type, mxNumeric>::value &&
-      std::is_compound<Container>::value,
-      Container>::type& value);
+      MxArithmeticType<T>::value, T>::type& value);
+  /* complex types, complex<float> or complex<double> */
   template <typename T>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<T>::array_type, mxChar>::value,
-      T>::type& value);
+      MxComplexType<T>::value, T>::type& value );
+  /* container with fundamental numerics, i.e. vector<double> */
   template <typename Container>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<
-        typename Container::value_type>::array_type, mxChar>::value &&
-      std::is_compound<Container>::value &&
-      std::is_signed<typename Container::value_type>::value,
+      MxArithmeticCompound<Container>::value, 
       Container>::type& value);
+  /* container with complex numbers, i.e. vector<complex<double>> */
   template <typename Container>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<
-        typename Container::value_type>::array_type, mxChar>::value &&
-      std::is_compound<Container>::value &&
-      !std::is_signed<typename Container::value_type>::value,
-      Container>::type& value);
+      MxComplexCompound<Container>::value, Container>::type& value);
+  /* char type */
   template <typename T>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<T>::array_type, mxLogical>::value,
-      T>::type& value);
+      MxCharType<T>::value, T>::type& value);
+  /* containter with signed char */
   template <typename Container>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<
-        typename Container::value_type>::array_type, mxLogical>::value &&
-      std::is_compound<Container>::value,
+      (MxCharCompound<Container>::value) &&
+      (std::is_signed<typename Container::value_type>::value),
       Container>::type& value);
+  /* container with unsigned char */
   template <typename Container>
   static mxArray* fromInternal(const typename std::enable_if<
-      std::is_same<typename MxTypes<
-        typename Container::value_type>::array_type, mxCell>::value &&
-      std::is_compound<Container>::value,
+      (MxCharCompound<Container>::value) &&
+      !(std::is_signed<typename Container::value_type>::value),
       Container>::type& value);
-  /** Templated mxArray exporters.
-   */
+  /* logicals */
   template <typename T>
-  static void toInternal(const mxArray* array, typename std::enable_if<
-      std::is_arithmetic<T>::value, T>::type* value) {
+  static mxArray* fromInternal(const typename std::enable_if<
+      MxLogicalType<T>::value, T>::type& value);
+  /* container with logicals */
+  template <typename Container>
+  static mxArray* fromInternal(const typename std::enable_if<
+      MxLogicalCompound<Container>::value, Container>::type& value);
+  /* container with cell type content */
+  template <typename Container>
+  static mxArray* fromInternal(const typename std::enable_if<
+      MxCellCompound<Container>::value, Container>::type& value);
+
+
+
+  /*************************************************************/
+  
+  /**             Templated mxArray exporters                 **/
+
+  /*************************************************************/
+
+  /* singleton types */
+  template <typename T>
+  static void toInternal(const mxArray* array, 
+                         typename std::enable_if<
+                           MxArithmeticType<T>::value || 
+                           MxComplexType<T>::value ||
+                           MxLogicalType<T>::value ||
+                           MxCharType<T>::value, T>::type* value) {
     atInternal<T>(array, 0, value);
   }
+  /* vector types */
+  template <typename T>
+  static void toInternal(const mxArray* array, 
+                         typename std::enable_if<
+                           MxComplexOrArithmeticCompound<T>::value || 
+                           MxLogicalCompound<T>::value ||
+                           MxCharCompound<T>::value, T>::type* value);
+  /* nested types (leads into recursive deduction) */
   template <typename T>
   static void toInternal(const mxArray* array, typename std::enable_if<
-      std::is_compound<T>::value &&
-      std::is_arithmetic<typename T::value_type>::value,
-      T>::type* value);
+                           MxCellType<T>::value &&
+                           (!std::is_compound<T>::value || 
+                            MxCellType<typename T::value_type>::value), T>::type* value);
+
+
+
+  /*************************************************************/
+  
+  /**             Templated mxArray getters                   **/
+
+  /*************************************************************/
+
+  /* fundamental numeric types */
   template <typename T>
-  static void toInternal(const mxArray* array, typename std::enable_if<
-      std::is_compound<T>::value &&
-      !std::is_arithmetic<typename T::value_type>::value,
-      T>::type* value);
-  template <typename T>
-  static void atInternal(const mxArray* array,
-                         mwIndex index,
+  static void atInternal(const mxArray* array, mwIndex index,
                          typename std::enable_if<
-      std::is_arithmetic<T>::value, T>::type* value);
+                         MxComplexOrArithmeticType<T>::value || 
+                         MxLogicalType<T>::value ||
+                         MxCharType<T>::value, T>::type* value); 
+  /* converter for nested types */
   template <typename T>
-  static void atInternal(const mxArray* array,
-                         mwIndex index,
+  static void atInternal(const mxArray* array, mwIndex index,
                          typename std::enable_if<
-      std::is_compound<T>::value,
-      T>::type* value);
+                           std::is_compound<T>::value && !MxComplexType<T>::value, T>::type* value);
+  /* structure acess */
   template <typename T>
-  static void atInternal(const mxArray* array,
-                         const std::string& field,
-                         mwIndex index,
-                         T* value);
+  static void atInternal(const mxArray* array, const std::string& field,
+                         mwIndex index, T* value);
+
+
+
+  /*************************************************************/
+  
+  /**           Templated mxArray element setters             **/
+
+  /*************************************************************/
+
+  /* fundamental numeric and complex types */
   template <typename T>
-  static void setInternal(mxArray* array,
-                          mwIndex index,
+  static void setInternal(mxArray* array, mwIndex index,
                           const typename std::enable_if<
-      std::is_arithmetic<T>::value,
-      T>::type& value);
+						                !std::is_compound<T>::value || 
+										MxComplexType<T>::value, T>::type& value);
+  /* container types */
   template <typename T>
-  static void setInternal(mxArray* array,
-                          mwIndex index,
+  static void setInternal(mxArray* array,  mwIndex index,
                           const typename std::enable_if<
-      std::is_compound<T>::value,
-      T>::type& value);
+					                  MxCellType<T>::value, T>::type& value);
+  /* structure access */
   template <typename T>
-  static void setInternal(mxArray* array,
-                          const std::string& field,
-                          mwIndex index,
-                          const T& value);
+  static void setInternal(mxArray* array, const std::string& field,
+                          mwIndex index, const T& value);
+
+
+
+  /*************************************************************/
+  
+  /**    Assignment helpers (for MxArray.to<type>(value) )    **/
+
+  /*************************************************************/
+						  
+  /* Explicit integer element assignment */
   template <typename T, typename R>
-  static void assignTo(const mxArray* array, mwIndex index, R* value) {
-    *value = *(reinterpret_cast<T*>(mxGetData(array)) + index);
+  static void assignTo(const mxArray* array, 
+                       mwIndex index, typename std::enable_if<
+                       std::is_integral<R>::value, R>::type* value) {
+    MEXPLUS_ASSERT(!mxIsComplex(array), "Non-complex array expected!");
+    *value = (R)*(reinterpret_cast<T*>(mxGetData(array)) + index);
   }
+  /* Explicit floating point element assignment */
+  template <typename T, typename R>
+  static void assignTo(const mxArray* array, 
+                       mwIndex index, 
+                       typename std::enable_if<
+                         std::is_floating_point<R>::value, R>::type* value) {
+    if(mxIsComplex(array))
+    {
+        T real_part = *(reinterpret_cast<T*>(mxGetPr(array)) + index);
+        T imag_part = *(reinterpret_cast<T*>(mxGetPi(array)) + index);
+
+        *value = std::abs( std::complex<R>( real_part, imag_part ) );  /* magnitude */
+    } else {
+        *value = (R)*(reinterpret_cast<T*>(mxGetData(array)) + index);
+    }
+  }
+  /* Explicit complex element assignment */
+  template <typename T, typename R>
+  static void assignTo(const mxArray* array, mwIndex index, 
+                       typename std::enable_if<
+                         MxComplexType<R>::value, R>::type* value) {
+    typedef typename R::value_type ValueType;
+    ValueType real_part, imag_part;
+
+    if(mxIsComplex(array))
+    {
+        real_part = (typename R::value_type)*(reinterpret_cast<T*>(mxGetPr(array)) + index);
+        imag_part = (typename R::value_type)*(reinterpret_cast<T*>(mxGetPi(array)) + index);
+    } else {
+        real_part = (typename R::value_type)*(reinterpret_cast<T*>(mxGetData(array)) + index);
+        imag_part = (typename R::value_type)0.0;
+    }
+    
+    *value = std::complex<ValueType>(real_part, imag_part);
+  }
+  /* explicit char (signed) element assignment */
   template <typename R>
-  static void assignCharTo(const mxArray* array,
-                           mwIndex index,
+  static void assignCharTo(const mxArray* array, mwIndex index,
                            typename std::enable_if<
-                             std::is_signed<R>::value,
-                             R>::type* value) {
+                             std::is_signed<R>::value, R>::type* value) {
     typedef typename std::make_signed<mxChar>::type SignedMxChar;
     *value = *(reinterpret_cast<SignedMxChar*>(mxGetChars(array)) + index);
   }
+  /* explicit char (unsigned) element assignment */
   template <typename R>
   static void assignCharTo(const mxArray* array,
                            mwIndex index,
                            typename std::enable_if<
-                             !std::is_signed<R>::value,
-                             R>::type* value) {
+                             !std::is_signed<R>::value, R>::type* value) {
     *value = *(mxGetChars(array) + index);
   }
-  template <typename T, typename R>
-  static void assignTo(const mxArray* array, R* value) {
-    T* data_pointer = reinterpret_cast<T*>(mxGetData(array));
-    value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
+    /* explicit cell element assignment */
+  template <typename T>
+  static void assignCellTo(const mxArray* array, mwIndex index, T* value) {
+    const mxArray* element = mxGetCell(array, index);
+    MEXPLUS_CHECK_NOTNULL(element);
+    toInternal<T>(element, value);  /* recursion for nested types */
   }
+
+
+
+  /* explicit numeric array assignment */
+  template <typename T, typename R>
+  static void assignTo(const mxArray* array, typename std::enable_if<
+                                               MxArithmeticCompound<R>::value || 
+											   MxLogicalCompound<R>::value || 
+											   MxCharCompound<R>::value, R>::type* value) {
+    if(!mxIsComplex(array))
+    {
+      T* data_pointer = reinterpret_cast<T*>(mxGetData(array));
+      value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
+    } else {
+      T* real_part = reinterpret_cast<T*>(mxGetPr(array));
+      T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
+
+      assert( value->empty() );
+      for( mwSize i = 0; i < mxGetNumberOfElements(array); i++, real_part++, imag_part++ )
+      {
+        value->push_back( std::abs( std::complex<double>( *real_part, *imag_part ) ) ); /* magnitude */
+      }
+    }
+  }
+  /* explicit complex array assigment */
+    template <typename T, typename R>
+  static void assignTo(const mxArray* array, typename std::enable_if<
+      MxComplexCompound<R>::value, R>::type* value) {
+    if(!mxIsComplex(array))
+    {
+      T* data_pointer = reinterpret_cast<T*>(mxGetData(array));
+
+      assert( value->empty() );
+      for( mwSize i = 0; i < mxGetNumberOfElements(array); i++, data_pointer++ )
+      {
+        value->push_back( (R)( (typename R::value_type)*data_pointer, 0.0f ) );
+      }
+    } else {
+      T* real_part = reinterpret_cast<T*>(mxGetPr(array));
+      T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
+
+      for( mwSize i = 0; i < mxGetNumberOfElements(array); i++, real_part++, imag_part++ )
+      {
+		  value->push_back( R::value_type( *real_part, *imag_part ) );
+      }
+    }
+  }
+    /* explicit char (signed) array assignment */
   template <typename R>
   static void assignStringTo(const mxArray* array, typename std::enable_if<
-      std::is_signed<typename R::value_type>::value,
-      R>::type* value) {
+      std::is_signed<typename R::value_type>::value, R>::type* value) {
     typedef typename std::make_signed<mxChar>::type SignedMxChar;
     SignedMxChar* data_pointer = reinterpret_cast<SignedMxChar*>(
         mxGetChars(array));
     value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
   }
+  /* explicit char (unsigned) array assignment */
   template <typename R>
   static void assignStringTo(const mxArray* array, typename std::enable_if<
       !std::is_signed<typename R::value_type>::value,
@@ -804,30 +951,67 @@ private:
     mxChar* data_pointer = mxGetChars(array);
     value->assign(data_pointer, data_pointer + mxGetNumberOfElements(array));
   }
-  template <typename T>
-  static void assignCellTo(const mxArray* array, mwIndex index, T* value) {
-    const mxArray* element = mxGetCell(array, index);
-    MEXPLUS_CHECK_NOTNULL(element);
-    toInternal<T>(element, value);
-  }
+  /* explicit cell array assignment */
   template <typename T>
   static void assignCellTo(const mxArray* array, T* value) {
+    assert( value->empty() );
     for (int i = 0; i < mxGetNumberOfElements(array); ++i) {
       const mxArray* element = mxGetCell(array, i);
       MEXPLUS_CHECK_NOTNULL(element);
       value->push_back(to<typename T::value_type>(element));
     }
   }
+
+
+
+  /*************************************************************/
+  
+  /**  Assignment helpers (for MxArray.set<type>(i, value) )  **/
+
+  /*************************************************************/
+
+  /* explicit numeric element assignment */
   template <typename R, typename T>
-  static void assignFrom(mxArray* array, mwIndex index, const T& value) {
-    *(reinterpret_cast<R*>(mxGetData(array)) + index) = value;
+  static void assignFrom(mxArray* array, 
+                         mwIndex index, 
+                         const typename std::enable_if<
+                         MxArithmeticType<T>::value || 
+						 MxCharType<T>::value, T>::type& value) {
+    if(mxIsComplex(array))
+    {
+      *(reinterpret_cast<R*>(mxGetPr(array)) + index) = (R)value;
+      *(reinterpret_cast<R*>(mxGetPi(array)) + index) = (R)0.0;
+    } else {
+      *(reinterpret_cast<R*>(mxGetData(array)) + index) = (R)value;
+    }
+  }
+  /* explicit complex element assignment */
+  template <typename R, typename T>
+  static void assignFrom(mxArray* array, 
+                         mwIndex index, 
+                         const typename std::enable_if<
+                         MxComplexType<T>::value, T>::type& value) {
+    if(mxIsComplex(array))
+    {
+      *(reinterpret_cast<R*>(mxGetPr(array)) + index) = value.real();
+      *(reinterpret_cast<R*>(mxGetPi(array)) + index) = value.imag();
+    } else {
+      *(reinterpret_cast<R*>(mxGetData(array)) + index) = (R)std::abs( value );  /* magnitude */
+    }
   }
   template <typename T>
   static void assignCharFrom(mxArray* array,
                              mwIndex index,
                              const typename std::enable_if<
-      std::is_integral<T>::value && std::is_signed<T>::value,
-      T>::type& value) {
+                               std::is_floating_point<T>::value, T>::type& value) {
+    *(mxGetChars(array) + index) = (char)value;  // whoever needs this...
+  }
+  template <typename T>
+  static void assignCharFrom(mxArray* array,
+                             mwIndex index,
+                             const typename std::enable_if<
+                               std::is_integral<T>::value &&
+                               std::is_signed<T>::value, T>::type& value) {
     *(mxGetChars(array) + index) = reinterpret_cast<const typename
         std::make_unsigned<T>::type&>(value);
   }
@@ -835,9 +1019,17 @@ private:
   static void assignCharFrom(mxArray* array,
                              mwIndex index,
                              const typename std::enable_if<
-      !std::is_integral<T>::value || !std::is_signed<T>::value,
-      T>::type& value) {
+                               std::is_integral<T>::value &&
+                               !std::is_signed<T>::value, T>::type& value) {
     *(mxGetChars(array) + index) = value;
+  }
+
+  template <typename T>
+  static void assignCharFrom(mxArray* array,
+                             mwIndex index,
+                             const typename std::enable_if<
+                               MxComplexType<T>::value, T>::type& value) {
+    *(mxGetChars(array) + index) = std::abs(value);  // whoever needs it...
   }
 
   /** Pointer to the mxArray C object.
@@ -848,10 +1040,20 @@ private:
   bool owner_;
 };
 
+
+
+
+
+/*************************************************************/
+
+/**             Templated mxArray importers                 **/
+
+/*************************************************************/
+
+/* Fundamental numeric type */
 template <typename T>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxNumeric>::value,
-    T>::type& value) {
+    MxArithmeticType<T>::value, T>::type& value) {
   mxArray* array = mxCreateNumericMatrix(1,
                                          1,
                                          MxTypes<T>::class_id,
@@ -860,13 +1062,25 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
   *reinterpret_cast<T*>(mxGetData(array)) = value;
   return array;
 }
+/* Complex type, complex<float> or complex<double> */
+template <typename T>
+mxArray* MxArray::fromInternal(const typename std::enable_if<
+    MxComplexType<T>::value, T>::type& value ) {
+  typedef T ValueType;
+  typedef typename T::value_type CplValueType;
+  mxArray* array = mxCreateNumericMatrix(1, 1, 
+                                         MxTypes<ValueType>::class_id,
+                                         MxTypes<ValueType>::complexity);
+  MEXPLUS_CHECK_NOTNULL(array);
+  *reinterpret_cast<CplValueType*>(mxGetPr(array)) = value.real();
+  *reinterpret_cast<CplValueType*>(mxGetPi(array)) = value.imag();
 
+  return array;
+}
+/* container with fundamental numerics, i.e. vector<double> */
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<typename Container::value_type>::array_type,
-                 mxNumeric>::value &&
-    std::is_compound<Container>::value,
-    Container>::type& value) {
+    MxArithmeticCompound<Container>::value, Container>::type& value) {
   typedef typename Container::value_type ValueType;
   mxArray* array = mxCreateNumericMatrix(1,
                                          value.size(),
@@ -878,23 +1092,42 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
             reinterpret_cast<ValueType*>(mxGetData(array)));
   return array;
 }
+/* container with complex numbers, i.e. vector<complex<double>> */
+template <typename Container>
+mxArray* MxArray::fromInternal(const typename std::enable_if<
+      MxComplexCompound<Container>::value, Container>::type& value) {
+  typedef typename Container::value_type CtValueType;
+  typedef typename CtValueType::value_type ValueType;
+  mxArray* array = mxCreateNumericMatrix(1,
+                                         value.size(),
+                                         MxTypes<CtValueType>::class_id,
+                                         mxCOMPLEX);
+  MEXPLUS_CHECK_NOTNULL(array);
+  ValueType* real = reinterpret_cast<ValueType*>(mxGetPr(array));
+  ValueType* imag = reinterpret_cast<ValueType*>(mxGetPi(array));
 
+  typename Container::const_iterator it;
+
+  for( it = value.begin(); it != value.end(); it++ )
+  {
+      *real++ = (*it).real();
+      *imag++ = (*it).imag();
+  }
+
+  return array;
+}
 template <typename T>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxChar>::value,
-    T>::type& value) {
+    MxCharType<T>::value, T>::type& value) {
   const char char_array[] = {static_cast<char>(value), 0};
   mxArray* array = mxCreateString(char_array);
   MEXPLUS_CHECK_NOTNULL(array);
   return array;
 }
-
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<typename Container::value_type>::array_type,
-                 mxChar>::value &&
-    std::is_compound<Container>::value &&
-    std::is_signed<typename Container::value_type>::value,
+    (MxCharCompound<Container>::value) &&
+    (std::is_signed<typename Container::value_type>::value),
     Container>::type& value) {
   typedef typename std::make_unsigned<typename Container::value_type>::type
                    UnsignedValue;
@@ -909,13 +1142,10 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
   }
   return array;
 }
-
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<typename Container::value_type>::array_type,
-                 mxChar>::value &&
-    std::is_compound<Container>::value &&
-    !std::is_signed<typename Container::value_type>::value,
+    (MxCharCompound<Container>::value) &&
+    !(std::is_signed<typename Container::value_type>::value),
     Container>::type& value) {
   const mwSize dimensions[] = {1, static_cast<mwSize>(value.size())};
   mxArray* array = mxCreateCharArray(2, dimensions);
@@ -923,51 +1153,52 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
   std::copy(value.begin(), value.end(), mxGetChars(array));
   return array;
 }
-
 template <typename T>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxLogical>::value,
-    T>::type& value) {
+    MxLogicalType<T>::value, T>::type& value) {
   mxArray* array = mxCreateLogicalScalar(value);
   MEXPLUS_CHECK_NOTNULL(array);
   return array;
 }
-
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<typename Container::value_type>::array_type,
-                 mxLogical>::value &&
-    std::is_compound<Container>::value,
-    Container>::type& value) {
+    MxLogicalCompound<Container>::value, Container>::type& value) {
   mxArray* array = mxCreateLogicalMatrix(1, value.size());
   MEXPLUS_CHECK_NOTNULL(array);
   std::copy(value.begin(), value.end(), mxGetLogicals(array));
   return array;
 }
-
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
-    std::is_same<typename MxTypes<typename Container::value_type>::array_type,
-                 mxCell>::value &&
-    std::is_compound<Container>::value,
-    Container>::type& value) {
+    MxCellCompound<Container>::value, Container>::type& value) {
   mxArray* array = mxCreateCellMatrix(1, value.size());
   MEXPLUS_CHECK_NOTNULL(array);
   mwIndex index = 0;
   for (typename Container::const_iterator it = value.begin();
        it != value.end();
        ++it) {
+    mxArray* new_item = from(*it);  /* safe in case if from() fails */
     mxDestroyArray(mxGetCell(array, index));
-    mxSetCell(array, index++, from(*it));
+    mxSetCell(array, index++, new_item);
   }
   return array;
 }
 
+
+
+
+/*************************************************************/
+
+/**             Templated mxArray exporters                 **/
+
+/*************************************************************/
+
+/* converter from numeric matrix to container */
 template <typename T>
 void MxArray::toInternal(const mxArray* array, typename std::enable_if<
-      std::is_compound<T>::value &&
-      std::is_arithmetic<typename T::value_type>::value,
-      T>::type* value) {
+                           MxComplexOrArithmeticCompound<T>::value || 
+                           MxLogicalCompound<T>::value ||
+                           MxCharCompound<T>::value, T>::type* value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_CHECK_NOTNULL(value);
   switch (mxGetClassID(array)) {
@@ -989,55 +1220,65 @@ void MxArray::toInternal(const mxArray* array, typename std::enable_if<
       MEXPLUS_ERROR("Cannot convert %s.", mxGetClassName(array));
   }
 }
-
+/* converter from nested types to container */
 template <typename T>
 void MxArray::toInternal(const mxArray* array, typename std::enable_if<
-      std::is_compound<T>::value &&
-      !std::is_arithmetic<typename T::value_type>::value,
-      T>::type* value) {
+                           MxCellType<T>::value &&
+                           (!std::is_compound<T>::value || 
+                            MxCellType<typename T::value_type>::value), T>::type* value) {
   MEXPLUS_CHECK_NOTNULL(value);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
+  assert( value->empty() );
   for (int i = 0; i < mxGetNumberOfElements(array); ++i) {
     const mxArray* element = mxGetCell(array, i);
     value->push_back(to<typename T::value_type>(element));
   }
 }
 
+
+
+
+/*************************************************************/
+
+/**             Templated mxArray getters                   **/
+
+/*************************************************************/
+/* converter from fundamental numeric or complex types */
 template <typename T>
-void MxArray::atInternal(const mxArray* array,
-                         mwIndex index,
+void MxArray::atInternal(const mxArray* array, mwIndex index,
                          typename std::enable_if<
-    std::is_arithmetic<T>::value, T>::type* value) {
+                         MxComplexOrArithmeticType<T>::value || 
+                         MxLogicalType<T>::value ||
+                         MxCharType<T>::value, T>::type* value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_CHECK_NOTNULL(value);
   MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   switch (mxGetClassID(array)) {
-    case mxINT8_CLASS: assignTo<int8_t, T>(array, index, value); break;
-    case mxUINT8_CLASS: assignTo<uint8_t, T>(array, index, value); break;
-    case mxINT16_CLASS: assignTo<int16_t, T>(array, index, value); break;
-    case mxUINT16_CLASS: assignTo<uint16_t, T>(array, index, value); break;
-    case mxINT32_CLASS: assignTo<int32_t, T>(array, index, value); break;
-    case mxUINT32_CLASS: assignTo<uint32_t, T>(array, index, value); break;
-    case mxINT64_CLASS: assignTo<int64_t, T>(array, index, value); break;
-    case mxUINT64_CLASS: assignTo<uint64_t, T>(array, index, value); break;
-    case mxSINGLE_CLASS: assignTo<float, T>(array, index, value); break;
-    case mxDOUBLE_CLASS: assignTo<double, T>(array, index, value); break;
+    case mxINT8_CLASS:    assignTo<int8_t, T>(array, index, value); break;
+    case mxUINT8_CLASS:   assignTo<uint8_t, T>(array, index, value); break;
+    case mxINT16_CLASS:   assignTo<int16_t, T>(array, index, value); break;
+    case mxUINT16_CLASS:  assignTo<uint16_t, T>(array, index, value); break;
+    case mxINT32_CLASS:   assignTo<int32_t, T>(array, index, value); break;
+    case mxUINT32_CLASS:  assignTo<uint32_t, T>(array, index, value); break;
+    case mxINT64_CLASS:   assignTo<int64_t, T>(array, index, value); break;
+    case mxUINT64_CLASS:  assignTo<uint64_t, T>(array, index, value); break;
+    case mxSINGLE_CLASS:  assignTo<float, T>(array, index, value); break;
+    case mxDOUBLE_CLASS:  assignTo<double, T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignTo<mxLogical, T>(array, index, value); break;
-    case mxCHAR_CLASS: assignCharTo<T>(array, index, value); break;
-    case mxCELL_CLASS: assignCellTo<T>(array, index, value); break;
+    case mxCHAR_CLASS:    assignCharTo<T>(array, index, value); break;
+    case mxCELL_CLASS:    assignCellTo<T>(array, index, value); break;
     // case mxSPARSE_CLASS:
     default:
       MEXPLUS_ASSERT(true, "Cannot convert %s", mxGetClassName(array));
   }
 }
-
 template <typename T>
-void MxArray::atInternal(const mxArray* array,
-                         mwIndex index,
+void MxArray::atInternal(const mxArray* array, mwIndex index,
                          typename std::enable_if<
-    std::is_compound<T>::value, T>::type* value) {
+                           std::is_compound<T>::value && 
+                           !MxComplexType<T>::value, T>::type* value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_CHECK_NOTNULL(value);
   MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
@@ -1047,7 +1288,6 @@ void MxArray::atInternal(const mxArray* array,
   const mxArray* element = mxGetCell(array, index);
   toInternal<T>(element, value);
 }
-
 template <typename T>
 void MxArray::atInternal(const mxArray* array,
                          const std::string& field,
@@ -1064,52 +1304,65 @@ void MxArray::atInternal(const mxArray* array,
   toInternal<T>(element, value);
 }
 
+
+
+
+/*************************************************************/
+
+/**             Templated mxArray setters                   **/
+
+/*************************************************************/
+/* converter from fundamental numeric or complex types */
 template <typename T>
 void MxArray::setInternal(mxArray* array,
                           mwIndex index,
                           const typename std::enable_if<
-    std::is_arithmetic<T>::value,
-    T>::type& value) {
+                            !std::is_compound<T>::value || 
+							MxComplexType<T>::value, T>::type& value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   switch (mxGetClassID(array)) {
-    case mxINT8_CLASS: assignFrom<int8_t, T>(array, index, value); break;
-    case mxUINT8_CLASS: assignFrom<uint8_t, T>(array, index, value); break;
-    case mxINT16_CLASS: assignFrom<int16_t, T>(array, index, value); break;
-    case mxUINT16_CLASS: assignFrom<uint16_t, T>(array, index, value); break;
-    case mxINT32_CLASS: assignFrom<int32_t, T>(array, index, value); break;
-    case mxUINT32_CLASS: assignFrom<uint32_t, T>(array, index, value); break;
-    case mxINT64_CLASS: assignFrom<int64_t, T>(array, index, value); break;
-    case mxUINT64_CLASS: assignFrom<uint64_t, T>(array, index, value); break;
-    case mxSINGLE_CLASS: assignFrom<float, T>(array, index, value); break;
-    case mxDOUBLE_CLASS: assignFrom<double, T>(array, index, value); break;
-    case mxCHAR_CLASS: assignCharFrom<T>(array, index, value); break;
+    case mxINT8_CLASS:    assignFrom<int8_t, T>(array, index, value); break;
+    case mxUINT8_CLASS:   assignFrom<uint8_t, T>(array, index, value); break;
+    case mxINT16_CLASS:   assignFrom<int16_t, T>(array, index, value); break;
+    case mxUINT16_CLASS:  assignFrom<uint16_t, T>(array, index, value); break;
+    case mxINT32_CLASS:   assignFrom<int32_t, T>(array, index, value); break;
+    case mxUINT32_CLASS:  assignFrom<uint32_t, T>(array, index, value); break;
+    case mxINT64_CLASS:   assignFrom<int64_t, T>(array, index, value); break;
+    case mxUINT64_CLASS:  assignFrom<uint64_t, T>(array, index, value); break;
+    case mxSINGLE_CLASS:  assignFrom<float, T>(array, index, value); break;
+    case mxDOUBLE_CLASS:  assignFrom<double, T>(array, index, value); break;
+    case mxCHAR_CLASS:    assignCharFrom<T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignFrom<mxLogical, T>(array, index, value); break;
     case mxCELL_CLASS: 
+    {
+      mxArray* new_item = from(value);  /* safe in case if from() fails */
+
       mxDestroyArray(mxGetCell(array, index));
-      mxSetCell(array, index, from(value)); break;
+      mxSetCell(array, index, new_item); 
+      break;
+    }
     default:
       MEXPLUS_ERROR("Cannot assign to %s array.", mxGetClassName(array));
   }
 }
-
+/* converter from fundamental numeric or complex types */
 template <typename T>
 void MxArray::setInternal(mxArray* array,
                           mwIndex index,
                           const typename std::enable_if<
-    std::is_compound<T>::value,
-    T>::type& value) {
+                            MxCellType<T>::value, T>::type& value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
+  mxArray* new_item = from(value);  /* safe in case if from() fails */
   mxDestroyArray(mxGetCell(array, index));
-  mxSetCell(array, index, from(value));
+  mxSetCell(array, index, new_item);
 }
-
 template <typename T>
 void MxArray::setInternal(mxArray* array,
                           const std::string& field,
@@ -1120,22 +1373,26 @@ void MxArray::setInternal(mxArray* array,
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
-  int field_num = mxGetFieldNumber(array, field.c_str());
-  if( field_num < 0 ) {
-    field_num = mxAddField(array, field.c_str());
-    MEXPLUS_ASSERT(field_num >= 0,
+  int field_number = mxGetFieldNumber(array, field.c_str());
+  if( field_number < 0 ) {
+    field_number = mxAddField(array, field.c_str());
+    MEXPLUS_ASSERT(field_number >= 0,
                    "Failed to create a field '%s'",
                    field.c_str());
   }
-  mxDestroyArray(mxGetFieldByNumber(array, index, field_num));
-  mxSetFieldByNumber(array, index, field_num, from(value));
+  mxArray* new_item = from(value);
+  mxDestroyArray(mxGetFieldByNumber(array, index, field_number));
+  mxSetFieldByNumber(array, index, field_number, new_item);
 }
+
+
+
+
 
 template <typename T>
 mxArray* MxArray::Numeric(int rows, int columns) {
   typedef typename std::enable_if<
-      std::is_same<typename MxTypes<T>::array_type, mxNumeric>::value,
-      T>::type Scalar;
+      MxComplexOrArithmeticType<T>::value, T>::type Scalar;
   mxArray* numeric = mxCreateNumericMatrix(rows,
                                            columns,
                                            MxTypes<Scalar>::class_id,
