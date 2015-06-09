@@ -1,6 +1,6 @@
 /** MxTypes and other type traits for template.
  *
- * Kota Yamaguchi 2014  http://github.com/kyamamgu/mexplus
+ * Kota Yamaguchi 2014  http://github.com/kyamagu/mexplus
  */
 
 #ifndef __MEXPLUS_MXTYPES_H__

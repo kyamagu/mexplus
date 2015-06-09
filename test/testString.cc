@@ -1,6 +1,6 @@
 /** Testing string conversion.
  *
- * Kota Yamaguchi 2013  http://github.com/kyamamgu/mexplus
+ * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
  */
 
 #include <mexplus/mxarray.h>

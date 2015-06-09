@@ -43,7 +43,7 @@
  * To add your own data conversion, define in namespace mexplus a template
  * specialization of MxArray::from() and MxArray::to().
  *
- * Kota Yamaguchi 2013  http://github.com/kyamamgu/mexplus
+ * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
  */
 
 #ifndef __MEXPLUS_MXARRAY_H__

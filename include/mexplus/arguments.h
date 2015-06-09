@@ -23,7 +23,7 @@
  * % Build
  * >> mex myFunction.cc src/mexplus/arguments.cc
  *
- * Kota Yamaguchi 2014  http://github.com/kyamamgu/mexplus
+ * Kota Yamaguchi 2014  http://github.com/kyamagu/mexplus
  */
 
 #ifndef __MEXPLUS_ARGUMENTS_H__
