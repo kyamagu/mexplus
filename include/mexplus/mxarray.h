@@ -43,7 +43,7 @@
  * To add your own data conversion, define in namespace mexplus a template
  * specialization of MxArray::from() and MxArray::to().
  *
- * Kota Yamaguchi 2014 <kyamagu@cs.stonybrook.edu>
+ * Kota Yamaguchi 2013  http://github.com/kyamamgu/mexplus
  */
 
 #ifndef __MEXPLUS_MXARRAY_H__
@@ -108,16 +108,28 @@ public:
     }
     return *this;
   }
-  /** MxArray constructor from mutable mxArray*. MxArray will manage memory.
-   * @param array mxArray pointer.
+  /** MxArray constructor from const mxArray*. MxArray will not manage memory.
+   * @param array mxArray pointer given by mexFunction.
    */
   explicit MxArray(const mxArray* array) :
       array_(const_cast<mxArray*>(array)),
       owner_(false) {}
-  /** MxArray constructor from const mxArray*. MxArray will not manage memory.
-   * @param array mxArray pointer given by mexFunction.
+  /** MxArray constructor from mutable mxArray*. MxArray will manage memory.
+   * @param array mxArray pointer.
    */
   explicit MxArray(mxArray* array) : array_(array), owner_(array) {}
+  /** Assignment from const mxArray*. MxArray will not manage memory.
+   */
+  MxArray& operator= (const mxArray* rhs) {
+    reset(rhs);
+    return *this;
+  }
+  /** Assignment from mutable mxArray*. MxArray will manage memory.
+   */
+  MxArray& operator= (mxArray* rhs) {
+    reset(rhs);
+    return *this;
+  }
   /** MxArray constructor from scalar.
    */
   template <typename T>
