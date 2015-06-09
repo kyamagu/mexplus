@@ -241,6 +241,9 @@ public:
       mexUnlock();
     getInstances()->clear();
   }
+  /** Get instance map.
+   */
+  static const InstanceMap& getInstanceMap() { return *getInstances(); }
 
 private:
   /** Constructor prohibited.
