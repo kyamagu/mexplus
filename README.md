@@ -383,7 +383,7 @@ namespace mexplus {
 template <>
 mxArray* MxArray::from(const MyObject& value) {
   // Write your conversion code. For example,
-  MxArray struct_array = MxArray::Struct();
+  MxArray struct_array(MxArray::Struct());
   struct_array.set("x", value.x);
   struct_array.set("y", value.y);
   // And so on...
