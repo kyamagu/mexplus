@@ -53,7 +53,7 @@
  * library. You may split MEX_DEFINE macros in multiple C++ files. In that
  * case, have MEX_DISPATCH macro in one of the files.
  *
- * Kota Yamaguchi 2014 <kyamagu@cs.stonybrook.edu>
+ * Kota Yamaguchi 2014  http://github.com/kyamagu/mexplus
  */
 
 #ifndef __MEXPLUS_DISPATCH_H__
@@ -241,6 +241,9 @@ public:
       mexUnlock();
     getInstances()->clear();
   }
+  /** Get instance map.
+   */
+  static const InstanceMap& getInstanceMap() { return *getInstances(); }
 
 private:
   /** Constructor prohibited.

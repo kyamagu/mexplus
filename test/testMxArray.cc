@@ -1,6 +1,6 @@
 /** MxArray unit test.
  *
- * Kota Yamaguchi 2013 <kyamagu@cs.stonybrook.edu>
+ * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
  */
 
 #include <mexplus/mxarray.h>
@@ -254,6 +254,9 @@ void testMxArrayCell() {
   cell_array.set(1, "text.");
   EXPECT(cell_array.at(0));
   EXPECT(cell_array.at(1));
+  cell_array = MxArray::Cell(1, 2);
+  EXPECT(!cell_array.at(0));
+  EXPECT(!cell_array.at(1));
 }
 
 /** Check struct array.
@@ -275,6 +278,8 @@ void testMxArrayStruct() {
   vector<double>::const_iterator it;
   for (it = vector_of_2.begin(); it != vector_of_2.end(); ++it)
     EXPECT(*it == 2);
+  struct_array = MxArray::Struct(sizeof(fields) / sizeof(char*), fields);
+  EXPECT(!struct_array.at("field1"));
 }
 
 } // namespace

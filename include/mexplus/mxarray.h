@@ -43,7 +43,7 @@
  * To add your own data conversion, define in namespace mexplus a template
  * specialization of MxArray::from() and MxArray::to().
  *
- * Kota Yamaguchi 2014 <kyamagu@cs.stonybrook.edu>
+ * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
  */
 
 #ifndef __MEXPLUS_MXARRAY_H__
@@ -110,16 +110,28 @@ public:
     }
     return *this;
   }
-  /** MxArray constructor from mutable mxArray*. MxArray will manage memory.
-   * @param array mxArray pointer.
+  /** MxArray constructor from const mxArray*. MxArray will not manage memory.
+   * @param array mxArray pointer given by mexFunction.
    */
   explicit MxArray(const mxArray* array) :
       array_(const_cast<mxArray*>(array)),
       owner_(false) {}
-  /** MxArray constructor from const mxArray*. MxArray will not manage memory.
-   * @param array mxArray pointer given by mexFunction.
+  /** MxArray constructor from mutable mxArray*. MxArray will manage memory.
+   * @param array mxArray pointer.
    */
   explicit MxArray(mxArray* array) : array_(array), owner_(array) {}
+  /** Assignment from const mxArray*. MxArray will not manage memory.
+   */
+  MxArray& operator= (const mxArray* rhs) {
+    reset(rhs);
+    return *this;
+  }
+  /** Assignment from mutable mxArray*. MxArray will manage memory.
+   */
+  MxArray& operator= (mxArray* rhs) {
+    reset(rhs);
+    return *this;
+  }
   /** MxArray constructor from scalar.
    */
   template <typename T>
@@ -1336,7 +1348,7 @@ void MxArray::setInternal(mxArray* array,
     case mxDOUBLE_CLASS:  assignFrom<double, T>(array, index, value); break;
     case mxCHAR_CLASS:    assignCharFrom<T>(array, index, value); break;
     case mxLOGICAL_CLASS: assignFrom<mxLogical, T>(array, index, value); break;
-    case mxCELL_CLASS: 
+    case mxCELL_CLASS:
     {
       mxArray* new_item = from(value);  /* safe in case if from() fails */
 
@@ -1374,7 +1386,7 @@ void MxArray::setInternal(mxArray* array,
                  index);
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
   int field_number = mxGetFieldNumber(array, field.c_str());
-  if( field_number < 0 ) {
+  if (field_number < 0) {
     field_number = mxAddField(array, field.c_str());
     MEXPLUS_ASSERT(field_number >= 0,
                    "Failed to create a field '%s'",

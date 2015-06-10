@@ -1,6 +1,6 @@
 /** MEX function helper library.
  *
- * Kota Yamaguchi 2013 <kyamagu@cs.stonybrook.edu>
+ * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
  */
 
 #include <mexplus/arguments.h>
