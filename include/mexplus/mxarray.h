@@ -587,7 +587,12 @@ public:
     mwSize cols  = (mwSize)mxGetN(array_);
     mwSize nDims = (mwSize)mxGetNumberOfDimensions(array_);
     
-    return nDims==2 && (rows==1 || cols==1);
+    return nDims==2 && (rows==1 || cols==1) && !isCell();
+  }
+  /** Determine whether array is integral type.
+   */
+  inline bool isIntegral(const char* name) const {
+    return mxIsNumeric(array_) && !mxIsDouble(array_);
   }
   /** Determine whether array is member of specified class.
    */
@@ -667,6 +672,9 @@ public:
     return isStruct() &&
         mxGetField(array_, index, field_name.c_str()) != NULL;
   }
+  /** Element size
+   */
+  int elementSize() const { return mxGetElementSize(array_); }
   /** Determine whether input is NaN (Not-a-Number).
    */
   static inline bool IsNaN(double value) { return mxIsNaN(value); }
