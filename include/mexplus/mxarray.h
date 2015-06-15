@@ -412,7 +412,7 @@ public:
   template <typename T>
   T at(mwIndex row, mwIndex column) const;
   /** Template for element accessor.
-   * @param si subscript index of the element.
+   * @param subscripts subscript indexes of elements.
    * @return value of the element at subscript index.
    */
   template <typename T>
@@ -489,6 +489,11 @@ public:
    */
   template <typename T>
   T* getData() const;
+  /** Get raw data pointer to imaginary part.
+   * @return pointer T*. If MxArray is not compatible, return NULL.
+   */
+  template <typename T>
+  T* getImagData() const;
   mxLogical* getLogicals() const {
     MEXPLUS_CHECK_NOTNULL(array_);
     MEXPLUS_ASSERT(isLogical(),
@@ -544,7 +549,7 @@ public:
     return std::string(field);
   }
   /** Get field names of a struct array.
-   * @params field_nams std::vector<std::string> of struct field names.
+   * @return std::vector<std::string> of struct field names.
    */
   std::vector<std::string> fieldNames() const {
     MEXPLUS_ASSERT(isStruct(), "Expected a struct array.");
@@ -568,7 +573,7 @@ public:
     return mxCalcSingleSubscript(array_, 2, subscripts);
   }
   /** Offset from first element to desired element.
-   * @param si subscript index of the array.
+   * @param subscripts subscript indexes of the array.
    * @return linear offset of the specified subscript index.
    */
   mwIndex subscriptIndex(const std::vector<mwIndex>& subscripts) const {
@@ -1428,6 +1433,15 @@ T* MxArray::getData() const {
                  "Expected a %s array.",
                  typeid(T).name());
   return reinterpret_cast<T*>(mxGetData(array_));
+}
+
+template <typename T>
+T* MxArray::getImagData() const {
+  MEXPLUS_CHECK_NOTNULL(array_);
+  MEXPLUS_ASSERT(MxTypes<T>::class_id == classID(),
+                 "Expected a %s array.",
+                 typeid(T).name());
+  return reinterpret_cast<T*>(mxGetPi(array_));
 }
 
 template <typename T>

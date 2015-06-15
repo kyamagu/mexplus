@@ -164,7 +164,7 @@ inline void CreateOperation(OperationNameAdmitter* admitter,
 }
 
 /** Key-value storage to make a stateful MEX function.
- *
+ *  \code
  *    #include <mexplus/dispatch.h>
  *
  *    using namespace std;
@@ -194,6 +194,7 @@ inline void CreateOperation(OperationNameAdmitter* admitter,
  *      intptr_t session_id = mxGetScalar(prhs[0]);
  *      Session<Database>::destroy(session_id);
  *    }
+ * \endcode
  */
 template<class T>
 class Session {

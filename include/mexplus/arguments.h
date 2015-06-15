@@ -125,7 +125,7 @@ public:
   }
   /** Parse arguments from mexFunction input.
    */
-  void parse(int nrhs, const mxArray* prhs[]) {
+  void parse(int nrhs, const mxArray* prhs[], bool ignore_multi_signatures=false) {
     if (definitions_.empty())
       mexErrMsgIdAndTxt("mexplus:arguments:error", "No format defined.");
     std::map<std::string, Definition>::iterator entry;
@@ -139,7 +139,7 @@ public:
       mexErrMsgIdAndTxt("mexplus:arguments:error",
                         (error_message_.empty()) ?
                         "Invalid arguments." : error_message_.c_str());
-    if (definitions_.size() > 1)
+    if (definitions_.size() > 1 && !ignore_multi_signatures)
       mexWarnMsgIdAndTxt("mexplus:arguments:warning",
                          "Input arguments match more than one signature.");
   }
