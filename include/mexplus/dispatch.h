@@ -71,7 +71,7 @@
 
 namespace mexplus {
 
-typedef bool OperationNameAdmitter(std::string name);
+typedef bool OperationNameAdmitter(const std::string& name);
 
 class OperationCreator;
 inline void CreateOperation(OperationNameAdmitter* admitter,
@@ -301,7 +301,36 @@ private:
  *   ...
  * }
  */
-#define MEX_DEFINE(name,admitter) \
+#define MEX_DEFINE(name) \
+class Operation_##name : public mexplus::Operation { \
+public: \
+  virtual void operator()(int nlhs, \
+                          mxArray *plhs[], \
+                          int nrhs, \
+                          const mxArray *prhs[]); \
+private: \
+  static bool Operation_Admitter( const std::string& func ) { return func == #name; } \
+  static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
+}; \
+const mexplus::OperationCreatorImpl<Operation_##name> \
+    Operation_##name::creator_(Operation_##name::Operation_Admitter); \
+void Operation_##name::operator()
+
+
+/** Define a MEX API function using a private admitter. Example:
+ *
+ * static bool myfunc_admitter( std::string& name ) {
+ *    return name == "myfunc";
+ * }
+ *
+ * MEX_DEFINE(myfunc, myfunc_admitter) (int nlhs, mxArray *plhs[],
+ *                                      int nrhs, const mxArray *prhs[]) {
+ *   if (nrhs != 1 || nlhs > 1)
+ *     mexErrMsgTxt("Wrong number of arguments.");
+ *   ...
+ * }
+ */
+#define MEX_DEFINE2(name,admitter) \
 class Operation_##name : public mexplus::Operation { \
 public: \
   virtual void operator()(int nlhs, \
