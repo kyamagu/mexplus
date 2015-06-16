@@ -64,17 +64,10 @@
 #include <mex.h>
 #include <string>
 
-#ifndef MEXPLUS_ATEXIT
-#define MEXPLUS_ATEXIT
-#endif
-
-
 namespace mexplus {
 
-typedef bool OperationNameAdmitter(std::string name);
-
 class OperationCreator;
-inline void CreateOperation(OperationNameAdmitter* admitter,
+inline void CreateOperation(const std::string& name,
                             OperationCreator* creator);
 
 /** Abstract operation class. Child class must implement operator().
@@ -98,8 +91,8 @@ class OperationCreator {
 public:
   /** Register an operation in the constructor.
    */
-  OperationCreator(OperationNameAdmitter* admitter) {
-    CreateOperation(admitter, this);
+  OperationCreator(const std::string& name) {
+    CreateOperation(name, this);
   }
   /** Destructor.
    */
@@ -115,7 +108,7 @@ public:
 template <class OperationClass>
 class OperationCreatorImpl : public OperationCreator {
 public:
-  OperationCreatorImpl(OperationNameAdmitter* admitter) : OperationCreator(admitter) {}
+  OperationCreatorImpl(const std::string& name) : OperationCreator(name) {}
   virtual Operation* create() { return new OperationClass; }
 };
 
@@ -123,15 +116,15 @@ public:
  */
 class OperationFactory {
 public:
-  typedef std::map<OperationNameAdmitter*, OperationCreator*> RegistryMap;
   /** Register a new creator.
    */
-  friend void CreateOperation(OperationNameAdmitter* admitter,
+  friend void CreateOperation(const std::string& name,
                               OperationCreator* creator);
   /** Create a new instance of the registered operation.
    */
   static Operation* create(const std::string& name) {
-    RegistryMap::const_iterator it = find(name);
+    std::map<std::string, OperationCreator*>::const_iterator it =
+        registry()->find(name);
     if (it == registry()->end())
       return static_cast<Operation*>(NULL);
     else
@@ -139,32 +132,23 @@ public:
   }
 
 private:
-  static RegistryMap::const_iterator find(const std::string& name)
-  {
-    RegistryMap::const_iterator it;
-    for( it = registry()->begin(); it != registry()->end(); it++ )
-    {
-      if( (*it->first)(name) ) return it;
-    }
-    return it;
-  }
   /** Obtain a pointer to the registration table.
    */
-  static RegistryMap* registry() {
-    static RegistryMap registry_table;
+  static std::map<std::string, OperationCreator*>* registry() {
+    static std::map<std::string, OperationCreator*> registry_table;
     return &registry_table;
   }
 };
 
 /** Register a new creator in OperationFactory.
  */
-inline void CreateOperation(OperationNameAdmitter* admitter,
+inline void CreateOperation(const std::string& name,
                             OperationCreator* creator) {
-  OperationFactory::registry()->insert(std::make_pair(admitter, creator));
+  OperationFactory::registry()->insert(make_pair(name, creator));
 }
 
 /** Key-value storage to make a stateful MEX function.
- *  \code
+ *
  *    #include <mexplus/dispatch.h>
  *
  *    using namespace std;
@@ -194,7 +178,6 @@ inline void CreateOperation(OperationNameAdmitter* admitter,
  *      intptr_t session_id = mxGetScalar(prhs[0]);
  *      Session<Database>::destroy(session_id);
  *    }
- * \endcode
  */
 template<class T>
 class Session {
@@ -301,7 +284,7 @@ private:
  *   ...
  * }
  */
-#define MEX_DEFINE(name,admitter) \
+#define MEX_DEFINE(name) \
 class Operation_##name : public mexplus::Operation { \
 public: \
   virtual void operator()(int nlhs, \
@@ -312,7 +295,7 @@ private: \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
-    Operation_##name::creator_(admitter); \
+    Operation_##name::creator_(#name); \
 void Operation_##name::operator()
 
 /** Insert a function dispatching code. Use once per MEX binary.
@@ -332,7 +315,6 @@ void mexFunction(int nlhs, mxArray *plhs[], \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
         "Invalid operation: %s", operation_name.c_str()); \
   (*operation)(nlhs, plhs, nrhs - 1, prhs + 1); \
-  MEXPLUS_ATEXIT; \
 }
 
 #endif // __MEXPLUS_DISPATCH_H__

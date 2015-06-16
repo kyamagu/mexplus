@@ -22,7 +22,6 @@ namespace {
 
 template <typename T>
 void testFundamentalScalar() {
-  //EXPECT(mexplus::MxArithmeticType<T>::value);
   T value = 2, value2 = 0;
   MxArray array(value);
   EXPECT(array);
@@ -53,7 +52,6 @@ void testFundamentalScalar() {
 /** Check all fundamental type conversions.
  */
 void testAllFundamentalScalar() {
-
   testFundamentalScalar<int8_t>();
   testFundamentalScalar<uint8_t>();
   testFundamentalScalar<int16_t>();
@@ -147,6 +145,7 @@ void testFundamentalVector() {
 /** Check all fundamental vector conversions.
  */
 void testAllFundamentalVector() {
+  testFundamentalVector<int8_t>();
   testFundamentalVector<uint8_t>();
   testFundamentalVector<int16_t>();
   testFundamentalVector<uint16_t>();
