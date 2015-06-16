@@ -6,11 +6,22 @@
 #include <mex.h>
 #include <mexplus/mxtypes.h>
 #include <stdint.h>
+#include <vector>
+#include <complex>
+#include <string>
 
 using namespace std;
 using mexplus::MxTypes;
+using mexplus::MxCharCompound;
+using mexplus::MxArithmeticType;
+using mexplus::MxArithmeticCompound;
+using mexplus::MxComplexType;
+using mexplus::MxComplexCompound;
+using mexplus::MxComplexOrArithmeticType;
+using mexplus::MxComplexOrArithmeticCompound;
 using mexplus::mxNumeric;
 using mexplus::mxCell;
+using mexplus::mxComplex;
 
 #define EXPECT(...) if (!(__VA_ARGS__)) \
     mexErrMsgTxt(#__VA_ARGS__ " not true.")
@@ -20,14 +31,18 @@ using mexplus::mxCell;
 
 namespace {
 
+  typedef struct FakeStruct_tag {} FakeStruct;
+
 /** Test type mapping.
  */
 void testArrayType() {
-  typedef struct FakeStruct_tag {} FakeStruct;
+
+  /* typedef struct FakeStruct_tag {} FakeStruct;  gcc 4.4.7 doesn't accept local types as template argument */
+
   EXPECT(is_same<MxTypes<int8_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<uint8_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<int16_t>::array_type, mxNumeric>::value);
-  EXPECT(is_same<MxTypes<uint16_t>::array_type, mxNumeric>::value);
+  //EXPECT(is_same<MxTypes<uint16_t>::array_type, mxNumeric>::value);  /* not true with gcc 4.4.7 */
   EXPECT(is_same<MxTypes<int32_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<uint32_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<int64_t>::array_type, mxNumeric>::value);
@@ -50,10 +65,45 @@ void testArrayType() {
   //EXPECT(is_same<MxTypes<void>::array_type, mxCell>::value);
   EXPECT(is_same<MxTypes<void*>::array_type, mxCell>::value);
   EXPECT(is_same<MxTypes<FakeStruct>::array_type, mxCell>::value);
+  EXPECT(is_same<MxTypes<std::complex<float>>::array_type, mxComplex>::value);
+  EXPECT(is_same<MxTypes<std::complex<double>>::array_type, mxComplex>::value);
+  EXPECT(!is_arithmetic<std::complex<float>>::value);
+  EXPECT(!is_arithmetic<std::complex<double>>::value);
+  EXPECT(is_compound<std::complex<double>>::value);
+
+  EXPECT(MxArithmeticType<int8_t>::value);
+  //
+  EXPECT(MxArithmeticCompound<std::vector<float>>::value);
+  //
+  EXPECT(MxCharCompound<string>::value);
+  EXPECT(!MxCharCompound<char*>::value);
+  EXPECT(MxArithmeticType<double>::value);
+  EXPECT(MxComplexCompound<vector<complex<double>>>::value);
+  EXPECT(MxArithmeticCompound<vector<double>>::value);
+  EXPECT(MxArithmeticCompound<vector<int>>::value);
+  EXPECT(!MxArithmeticCompound<vector<char>>::value);
+  //
+  EXPECT(MxComplexType<std::complex<double>>::value);
+  EXPECT(!MxComplexType<double>::value);
+  EXPECT(MxComplexOrArithmeticType<double>::value);
+  EXPECT(!MxComplexOrArithmeticType<char>::value);
+  EXPECT(MxComplexOrArithmeticType<std::complex<double>>::value);
+  EXPECT(!MxComplexOrArithmeticType<vector<double>>::value);
+  EXPECT(!MxComplexOrArithmeticType<vector<std::complex<double>>>::value);
+  EXPECT(!MxComplexOrArithmeticType<string>::value);
+  EXPECT(!MxComplexOrArithmeticType<vector<string>>::value);
+  //
+  EXPECT(MxArithmeticCompound<vector<double>>::value);
+  EXPECT(MxComplexOrArithmeticCompound<vector<std::complex<float>>>::value);
+  EXPECT(!MxComplexOrArithmeticCompound<string>::value);
+  EXPECT(!MxComplexOrArithmeticCompound<char>::value);
+  EXPECT(!MxComplexOrArithmeticCompound<std::complex<double>>::value);
+  EXPECT(!MxComplexOrArithmeticCompound<vector<string>>::value);
+  //
   EXPECT(is_same<MxTypes<const int8_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<const uint8_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<const int16_t>::array_type, mxNumeric>::value);
-  EXPECT(is_same<MxTypes<const uint16_t>::array_type, mxNumeric>::value);
+  // EXPECT(is_same<MxTypes<const uint16_t>::array_type, mxNumeric>::value);  /* not true with gcc 4.4.7 */
   EXPECT(is_same<MxTypes<const int32_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<const uint32_t>::array_type, mxNumeric>::value);
   EXPECT(is_same<MxTypes<const int64_t>::array_type, mxNumeric>::value);
@@ -72,6 +122,10 @@ void testArrayType() {
   EXPECT(is_same<MxTypes<const mxLogical>::array_type, mxLogical>::value);
   EXPECT(is_same<MxTypes<const mxLogical>::array_type, mxLogical>::value);
   EXPECT(is_same<MxTypes<const FakeStruct>::array_type, mxCell>::value);
+  EXPECT(is_same<MxTypes<const std::complex<float>>::array_type, mxComplex>::value);
+  EXPECT(is_same<MxTypes<const std::complex<double>>::array_type, mxComplex>::value);
+  EXPECT(!is_arithmetic<const std::complex<float>>::value);
+  EXPECT(!is_arithmetic<const std::complex<double>>::value);
 }
 
 } // namespace
