@@ -105,6 +105,9 @@ function buildTarget(target, varargin)
   if skipBuild(target)
     return;
   end
+  if isunix()
+    varargin = [varargin, 'CXXFLAGS="$CXXFLAGS -std=c++11"'];
+  end
   command = sprintf('mex%s -output ''%s'' %s%s', ...
                     sprintf(' ''%s''', target.sources{:}), ...
                     target.name, ...
