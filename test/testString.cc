@@ -1,9 +1,9 @@
 /** Testing string conversion.
  *
- * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
+ * Copyright 2013 Kota Yamaguchi.
  */
 
-#include <mexplus/mxarray.h>
+#include "mexplus/mxarray.h"
 
 using namespace std;
 

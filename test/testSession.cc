@@ -1,10 +1,10 @@
 /** MEX function helper library.
  *
- * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
+ * Copyright 2013 Kota Yamaguchi.
  */
 
-#include <mexplus/dispatch.h>
-#include <stdint.h>
+#include <cstdint>
+#include "mexplus/dispatch.h"
 
 using namespace std;
 
@@ -79,6 +79,6 @@ MEX_DEFINE(clear) (int nlhs,
   HypotheticalObjects::clear();
 }
 
-} // namespace
+}  // namespace
 
 MEX_DISPATCH

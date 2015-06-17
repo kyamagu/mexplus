@@ -1,12 +1,12 @@
 /** MEXPLUS: C++ Matlab MEX development kit.
  *
- * Kota Yamaguchi 2014
+ * Copyright 2014 Kota Yamaguchi.
  */
 
-#ifndef __MEXPLUS_H__
-#define __MEXPLUS_H__
+#ifndef INCLUDE_MEXPLUS_H_
+#define INCLUDE_MEXPLUS_H_
 
-#include <mexplus/arguments.h>
-#include <mexplus/dispatch.h>
+#include "mexplus/arguments.h"
+#include "mexplus/dispatch.h"
 
-#endif // __MEXPLUS_H__
+#endif  // INCLUDE_MEXPLUS_H_

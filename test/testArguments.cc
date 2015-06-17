@@ -1,10 +1,10 @@
 /** MEX function helper library.
  *
- * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
+ * Copyright 2013 Kota Yamaguchi.
  */
 
-#include <mexplus/arguments.h>
 #include <memory>
+#include "mexplus/arguments.h"
 
 #define EXPECT(condition) if (!(condition)) \
     mexErrMsgTxt(#condition " not true.")
@@ -119,7 +119,7 @@ void testOutputArguments() {
   output0[0] = lhs[0];
 }
 
-} // namespace
+}  // namespace
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   RUN_TEST(testInputsSingleFormatOptionsDefault);

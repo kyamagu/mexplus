@@ -1,26 +1,22 @@
 /** MxTypes and other type traits for template.
  *
- * Kota Yamaguchi 2014  http://github.com/kyamagu/mexplus
+ * Copyright 2014 Kota Yamaguchi.
  */
 
-#ifndef __MEXPLUS_MXTYPES_H__
-#define __MEXPLUS_MXTYPES_H__
+#ifndef INCLUDE_MEXPLUS_MXTYPES_H_
+#define INCLUDE_MEXPLUS_MXTYPES_H_
 
 #include <matrix.h>
-#include <type_traits>
 #include <complex>
+#include <type_traits>
 
 namespace mexplus {
-  
 
 /************************************************************/
-
-/* Traits for fundamental datatypes. 
+/* Traits for fundamental datatypes.
    Don't use with function templates due to type promotion!
    (Ignore it and get PITA!)                                */
-
 /************************************************************/
-
 
 /** Traits for mxLogical-convertibles.
  */
@@ -46,8 +42,8 @@ template <typename T>
 struct MxCharTy<T, typename std::enable_if<
     std::is_same<typename std::remove_cv<T>::type, char>::value ||
     // Visual Studio cannot distinguish these from uint.
-    //std::is_same<typename std::remove_cv<T>::type, char16_t>::value ||
-    //std::is_same<typename std::remove_cv<T>::type, char32_t>::value ||
+    // std::is_same<typename std::remove_cv<T>::type, char16_t>::value ||
+    // std::is_same<typename std::remove_cv<T>::type, char32_t>::value ||
     std::is_same<typename std::remove_cv<T>::type, mxChar>::value ||
     std::is_same<typename std::remove_cv<T>::type, wchar_t>::value,
     T>::type> : std::true_type {};
@@ -71,21 +67,14 @@ struct MxArithmeticTy<T, typename std::enable_if<
     (std::is_floating_point<T>::value) || (MxIntTy<T>::value),
     T>::type> : std::true_type {};
 
-
-
-
-
-/*********************************************/
-
-/* Introducing traits for MATLAB array types */
-
-/*********************************************/
+/**********************************************/
+/* Introducing traits for MATLAB array types. */
+/**********************************************/
 
 typedef struct mxNumeric_tag {} mxNumeric;
 typedef struct mxCell_tag    {} mxCell;
 typedef struct mxComplex_tag {} mxComplex;
-// mxLogical already defined in MATLAB (matrix.h)
-
+// mxLogical already defined in MATLAB (matrix.h).
 
 /** Traits for mxArray.
  */
@@ -212,9 +201,9 @@ struct MxTypes<T, typename std::enable_if<std::is_floating_point<T>::value &&
 };
 
 template <typename T>
-struct MxTypes<T, typename std::enable_if< 
-    std::is_same<typename std::remove_cv<T>::type, 
-                 std::complex<float>>::value, 
+struct MxTypes<T, typename std::enable_if<
+    std::is_same<typename std::remove_cv<T>::type,
+                 std::complex<float>>::value,
                  T>::type> {
   typedef T type;
   typedef mxComplex array_type;
@@ -223,9 +212,9 @@ struct MxTypes<T, typename std::enable_if<
 };
 
 template <typename T>
-struct MxTypes<T, typename std::enable_if< 
-    std::is_same<typename std::remove_cv<T>::type, 
-                 std::complex<double>>::value, 
+struct MxTypes<T, typename std::enable_if<
+    std::is_same<typename std::remove_cv<T>::type,
+                 std::complex<double>>::value,
                  T>::type> {
   typedef T type;
   typedef mxComplex array_type;
@@ -233,47 +222,48 @@ struct MxTypes<T, typename std::enable_if<
   static const mxComplexity complexity = mxCOMPLEX;
 };
 
+/********************************************/
+/* Type traits for function template usage. */
+/********************************************/
 
-
-/*******************************************/
-
-/* Type traits for function template usage */
-
-/*******************************************/
-
-/* Traits for logical types */
+/* Traits for logical types.
+ */
 template <typename T, typename U = T>
 struct MxLogicalType : std::false_type {};
 template<typename T>
 struct MxLogicalType<T, typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxLogical>::value, 
+    std::is_same<typename MxTypes<T>::array_type, mxLogical>::value,
     T>::type> : std::true_type {};
 
-/* Traits for char types */
+/* Traits for char types.
+ */
 template <typename T, typename U = T>
 struct MxCharType : std::false_type {};
 template<typename T>
 struct MxCharType<T, typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxChar>::value, 
+    std::is_same<typename MxTypes<T>::array_type, mxChar>::value,
     T>::type> : std::true_type {};
 
-/* Traits for arithmetic types */
+/* Traits for arithmetic types.
+ */
 template <typename T, typename U = T>
 struct MxArithmeticType : std::false_type {};
 template<typename T>
 struct MxArithmeticType<T, typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxNumeric>::value, 
+    std::is_same<typename MxTypes<T>::array_type, mxNumeric>::value,
     T>::type> : std::true_type {};
 
-/* Traits for complex types */
+/* Traits for complex types.
+ */
 template <typename T, typename U = T>
 struct MxComplexType : std::false_type {};
 template<typename T>
 struct MxComplexType<T, typename std::enable_if<
-    std::is_same<typename MxTypes<T>::array_type, mxComplex>::value, 
+    std::is_same<typename MxTypes<T>::array_type, mxComplex>::value,
     T>::type> : std::true_type {};
 
-/* Traits for complex or arithmetic types */
+/* Traits for complex or arithmetic types.
+ */
 template <typename T, typename U = T>
 struct MxComplexOrArithmeticType : std::false_type {};
 template <typename T>
@@ -285,7 +275,8 @@ struct MxComplexOrArithmeticType<T, typename std::enable_if<
     MxArithmeticTy<T>::value,
     T>::type> : std::true_type {};
 
-/* Traits for cell types */
+/* Traits for cell types.
+ */
 template <typename T, typename U = T>
 struct MxCellType : std::false_type {};
 template <typename T>
@@ -293,8 +284,8 @@ struct MxCellType<T, typename std::enable_if<
     std::is_same<typename MxTypes<T>::array_type, mxCell>::value,
     T>::type> : std::true_type {};
 
-
-/* Traits for logical type compounds */
+/* Traits for logical type compounds.
+ */
 template <typename T, typename U = T>
 struct MxLogicalCompound : std::false_type {};
 template <typename T>
@@ -302,7 +293,8 @@ struct MxLogicalCompound<T, typename std::enable_if<
     MxLogicalType<typename T::value_type>::value,
     T>::type> : std::true_type {};
 
-/* Traits for char type compounds */
+/* Traits for char type compounds.
+ */
 template <typename T, typename U = T>
 struct MxCharCompound : std::false_type {};
 template <typename T>
@@ -310,7 +302,8 @@ struct MxCharCompound<T, typename std::enable_if<
     MxCharType<typename T::value_type>::value,
     T>::type> : std::true_type {};
 
-/* Traits for arithmetic type compounds */
+/* Traits for arithmetic type compounds.
+ */
 template <typename T, typename U = T>
 struct MxArithmeticCompound : std::false_type {};
 template <typename T>
@@ -319,24 +312,27 @@ struct MxArithmeticCompound<T, typename std::enable_if<
     !(MxComplexType<T>::value),
     T>::type> : std::true_type {};
 
-/* Traits for complex type compounds */
+/* Traits for complex type compounds.
+ */
 template <typename T, typename U = T>
 struct MxComplexCompound : std::false_type {};
 template <typename T>
 struct MxComplexCompound<T, typename std::enable_if<
-    MxComplexType<typename T::value_type>::value, 
+    MxComplexType<typename T::value_type>::value,
     T>::type> : std::true_type {};
 
-/* Traits for complex or arithmetic type compounds */
+/* Traits for complex or arithmetic type compounds.
+ */
 template <typename T, typename U = T>
 struct MxComplexOrArithmeticCompound : std::false_type {};
 template <typename T>
 struct MxComplexOrArithmeticCompound<T, typename std::enable_if<
     MxComplexCompound<T>::value ||
-    MxArithmeticCompound<T>::value, 
+    MxArithmeticCompound<T>::value,
     T>::type> : std::true_type {};
 
-/* Traits for cell compounds */
+/* Traits for cell compounds.
+ */
 template <typename T, typename U = T>
 struct MxCellCompound : std::false_type {};
 template <typename T>
@@ -344,6 +340,6 @@ struct MxCellCompound<T, typename std::enable_if<
     MxCellType<typename T::value_type>::value,
     T>::type> : std::true_type {};
 
-} // namespace mexplus
+}  // namespace mexplus
 
-#endif // __MEXPLUS_MXTYPES_H__
+#endif  // INCLUDE_MEXPLUS_MXTYPES_H_

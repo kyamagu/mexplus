@@ -14,9 +14,10 @@ All classes are located in `mexplus` namespace, and you can use all of them by
 including the `mexplus.h` header file.
 
 The library depends on a few C++11 features, and might not be compatible with
-older compilers. For older `g++`, make sure to add `-std=c++11` flag in the
-`CXXFLAGS` in the MEX options located at `$HOME/.matlab/$VERSION/mexopts.sh`,
-or in Matlab R2014a or later, at `$HOME/.matlab/$VERSION/mex_C++_$ARCH.xml`.
+older compilers. For older `g++`, make sure to add `-std=c++11` flag at compile
+time, or in the `CXXFLAGS` variable in the MEX options located at
+`$HOME/.matlab/$VERSION/mexopts.sh`, or in Matlab R2014a or later, at
+`$HOME/.matlab/$VERSION/mex_C++_$ARCH.xml`.
 
 Example
 -------
@@ -128,6 +129,13 @@ the MEX function name used in `Database.m`.
 mex -Iinclude Database.cc -output Database_
 ```
 
+In Linux, you might need to add `CXXFLAGS="$CXXFLAGS -std=c++11"` to `mex`
+command. i.e.,
+
+```
+mex -Iinclude Database.cc -output Database_ CXXFLAGS="\$CXXFLAGS -std=c++11"
+```
+
 After this, the Database class is available in Matlab.
 
 ```matlab
@@ -138,8 +146,7 @@ clear database;
 
 The development kit also contains `make.m` build function to make a build
 process easier. Customize this file to build your own MEX interface. The kit
-depends on some of the C++11 features. In Linux, you might need to add
-`CXXFLAGS="$CXXFLAGS -std=c++11"` to `mex` command.
+depends on some of the C++11 features.
 
 See `example` directory for a complete demonstration.
 
