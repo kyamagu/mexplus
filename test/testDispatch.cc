@@ -1,9 +1,9 @@
 /** MEX dispatch helper library.
  *
- * Kota Yamaguchi 2013  http://github.com/kyamagu/mexplus
+ * Copyright 2013 Kota Yamaguchi.
  */
 
-#include <mexplus/dispatch.h>
+#include "mexplus/dispatch.h"
 
 #define EXPECT(condition) if (!(condition)) \
     mexErrMsgTxt(#condition " not true.")
@@ -24,6 +24,6 @@ MEX_DEFINE(bar) (int nlhs,
                  const mxArray* prhs[]) {
 }
 
-} // namespace
+}  // namespace
 
 MEX_DISPATCH

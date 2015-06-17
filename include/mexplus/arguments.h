@@ -1,5 +1,7 @@
 /** MEX function arguments helper library.
  *
+ * Copyright 2014 Kota Yamaguchi.
+ *
  * Example: writing a MEX function that takes 2 input arguments and 1 optional
  *          flag, and returns one output.
  *
@@ -23,16 +25,17 @@
  * % Build
  * >> mex myFunction.cc src/mexplus/arguments.cc
  *
- * Kota Yamaguchi 2014  http://github.com/kyamagu/mexplus
  */
 
-#ifndef __MEXPLUS_ARGUMENTS_H__
-#define __MEXPLUS_ARGUMENTS_H__
+#ifndef INCLUDE_MEXPLUS_ARGUMENTS_H_
+#define INCLUDE_MEXPLUS_ARGUMENTS_H_
 
+#include <cstdarg>
 #include <map>
-#include <mexplus/mxarray.h>
 #include <sstream>
-#include <stdarg.h>
+#include <string>
+#include <vector>
+#include "mexplus/mxarray.h"
 
 namespace mexplus {
 
@@ -64,7 +67,7 @@ namespace mexplus {
  *
  */
 class InputArguments {
-public:
+ public:
   /** Case-insensitive comparator for std::string.
    */
   struct CaseInsensitiveComparator {
@@ -125,7 +128,9 @@ public:
   }
   /** Parse arguments from mexFunction input.
    */
-  void parse(int nrhs, const mxArray* prhs[], bool ignore_multi_signatures=false) {
+  void parse(int nrhs,
+             const mxArray* prhs[],
+             bool ignore_multi_signatures = false) {
     if (definitions_.empty())
       mexErrMsgIdAndTxt("mexplus:arguments:error", "No format defined.");
     std::map<std::string, Definition>::iterator entry;
@@ -197,7 +202,7 @@ public:
     return get(option_name);
   }
 
-private:
+ private:
   /** Fill in optional arguments definition.
    */
   void fillOptionalDefinition(int option_size,
@@ -312,7 +317,7 @@ void InputArguments::get(const std::string& option_name,
  *     output.set(2, cell.release());
  */
 class OutputArguments {
-public:
+ public:
   /** Construct output argument wrapper.
    */
   OutputArguments(int nlhs,
@@ -364,7 +369,7 @@ public:
     return plhs_[index];
   }
 
-private:
+ private:
   /** Number of output arguments.
    */
   int nlhs_;
@@ -373,6 +378,6 @@ private:
   mxArray** plhs_;
 };
 
-} // namespace mexplus
+}  // namespace mexplus
 
-#endif // __MEXPLUS_ARGUMENTS_H__
+#endif  // INCLUDE_MEXPLUS_ARGUMENTS_H_

@@ -1,5 +1,7 @@
 /** MEX dispatch library.
  *
+ * Copyright 2014 Kota Yamaguchi.
+ *
  * This helper contains MEX_DEFINE() macro to help create a dispatchable MEX
  * file. Two files are required to create a new mex function. Suppose you are
  * creating two MEX functions `myfunc` and `myfunc2`. Then, make the following
@@ -7,7 +9,7 @@
  *
  * myfunc.m
  *
- *     function output_args = myfunc( varargin )
+ *     function output_args = myfunc(varargin)
  *     %MYFUNC Description of the function.
  *     %
  *     %   Details go here.
@@ -17,7 +19,7 @@
  *
  * myfunc2.m
  *
- *     function output_args = myfunc( varargin )
+ *     function output_args = myfunc(varargin)
  *     %MYFUNC Description of the function.
  *     %
  *     %   Details go here.
@@ -53,21 +55,19 @@
  * library. You may split MEX_DEFINE macros in multiple C++ files. In that
  * case, have MEX_DISPATCH macro in one of the files.
  *
- * Kota Yamaguchi 2014  http://github.com/kyamagu/mexplus
  */
 
-#ifndef __MEXPLUS_DISPATCH_H__
-#define __MEXPLUS_DISPATCH_H__
+#ifndef INCLUDE_MEXPLUS_DISPATCH_H_
+#define INCLUDE_MEXPLUS_DISPATCH_H_
 
+#include <mex.h>
 #include <map>
 #include <memory>
-#include <mex.h>
 #include <string>
 
 #ifndef MEXPLUS_ATEXIT
 #define MEXPLUS_ATEXIT
 #endif
-
 
 namespace mexplus {
 
@@ -80,7 +80,7 @@ inline void CreateOperation(OperationNameAdmitter* admitter,
 /** Abstract operation class. Child class must implement operator().
  */
 class Operation {
-public:
+ public:
   /** Destructor.
    */
   virtual ~Operation() {}
@@ -95,10 +95,10 @@ public:
 /** Base class for operation creators.
  */
 class OperationCreator {
-public:
+ public:
   /** Register an operation in the constructor.
    */
-  OperationCreator(OperationNameAdmitter* admitter) {
+  explicit OperationCreator(OperationNameAdmitter* admitter) {
     CreateOperation(admitter, this);
   }
   /** Destructor.
@@ -114,15 +114,16 @@ public:
  */
 template <class OperationClass>
 class OperationCreatorImpl : public OperationCreator {
-public:
-  OperationCreatorImpl(OperationNameAdmitter* admitter) : OperationCreator(admitter) {}
+ public:
+  explicit OperationCreatorImpl(OperationNameAdmitter* admitter) :
+    OperationCreator(admitter) {}
   virtual Operation* create() { return new OperationClass; }
 };
 
 /** Factory class for operations.
  */
 class OperationFactory {
-public:
+ public:
   typedef std::map<OperationNameAdmitter*, OperationCreator*> RegistryMap;
   /** Register a new creator.
    */
@@ -132,19 +133,16 @@ public:
    */
   static Operation* create(const std::string& name) {
     RegistryMap::const_iterator it = find(name);
-    if (it == registry()->end())
-      return static_cast<Operation*>(NULL);
-    else
-      return it->second->create();
+    return (it == registry()->end()) ?
+      static_cast<Operation*>(NULL) : it->second->create();
   }
 
-private:
-  static RegistryMap::const_iterator find(const std::string& name)
-  {
+ private:
+  static RegistryMap::const_iterator find(const std::string& name) {
     RegistryMap::const_iterator it;
-    for( it = registry()->begin(); it != registry()->end(); it++ )
-    {
-      if( (*it->first)(name) ) return it;
+    for (it = registry()->begin(); it != registry()->end(); it++) {
+      if ((*it->first)(name))
+        return it;
     }
     return it;
   }
@@ -198,7 +196,7 @@ inline void CreateOperation(OperationNameAdmitter* admitter,
  */
 template<class T>
 class Session {
-public:
+ public:
   typedef std::map<intptr_t, std::shared_ptr<T> > InstanceMap;
 
   /** Create an instance.
@@ -262,7 +260,7 @@ public:
    */
   static const InstanceMap& getInstanceMap() { return *getInstances(); }
 
-private:
+ private:
   /** Constructor prohibited.
    */
   Session() {}
@@ -290,7 +288,7 @@ private:
   }
 };
 
-} // namespace mexplus
+}  // namespace mexplus
 
 /** Define a MEX API function. Example:
  *
@@ -303,41 +301,42 @@ private:
  */
 #define MEX_DEFINE(name) \
 class Operation_##name : public mexplus::Operation { \
-public: \
+ public: \
   virtual void operator()(int nlhs, \
                           mxArray *plhs[], \
                           int nrhs, \
                           const mxArray *prhs[]); \
-private: \
-  static bool Operation_Admitter( const std::string& func ) { return func == #name; } \
+ private: \
+  static bool Operation_Admitter(const std::string& func) { \
+    return func == #name;\
+  } \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
     Operation_##name::creator_(Operation_##name::Operation_Admitter); \
 void Operation_##name::operator()
 
-
 /** Define a MEX API function using a private admitter. Example:
  *
- * static bool myfunc_admitter( std::string& name ) {
- *    return name == "myfunc";
+ * static bool myfunc_admitter(std::string& name) {
+ *   return name == "myfunc";
  * }
  *
- * MEX_DEFINE(myfunc, myfunc_admitter) (int nlhs, mxArray *plhs[],
- *                                      int nrhs, const mxArray *prhs[]) {
+ * MEX_DEFINE2(myfunc, myfunc_admitter) (int nlhs, mxArray *plhs[],
+ *                                       int nrhs, const mxArray *prhs[]) {
  *   if (nrhs != 1 || nlhs > 1)
  *     mexErrMsgTxt("Wrong number of arguments.");
  *   ...
  * }
  */
-#define MEX_DEFINE2(name,admitter) \
+#define MEX_DEFINE2(name, admitter) \
 class Operation_##name : public mexplus::Operation { \
-public: \
+ public: \
   virtual void operator()(int nlhs, \
                           mxArray *plhs[], \
                           int nrhs, \
                           const mxArray *prhs[]); \
-private: \
+ private: \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
@@ -352,10 +351,10 @@ void mexFunction(int nlhs, mxArray *plhs[], \
   if (nrhs < 1 || !mxIsChar(prhs[0])) \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
                       "Invalid argument: missing operation."); \
-  std::string operation_name( \
+  std::string operation_name(\
       mxGetChars(prhs[0]), \
       mxGetChars(prhs[0]) + mxGetNumberOfElements(prhs[0])); \
-  std::auto_ptr<mexplus::Operation> operation( \
+  std::auto_ptr<mexplus::Operation> operation(\
       mexplus::OperationFactory::create(operation_name)); \
   if (operation.get() == NULL) \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
@@ -364,4 +363,4 @@ void mexFunction(int nlhs, mxArray *plhs[], \
   MEXPLUS_ATEXIT; \
 }
 
-#endif // __MEXPLUS_DISPATCH_H__
+#endif  // INCLUDE_MEXPLUS_DISPATCH_H_
