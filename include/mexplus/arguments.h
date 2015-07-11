@@ -285,7 +285,7 @@ class InputArguments {
         return false;
       }
 
-      if( config )
+      if( !config )
       {
         // Get optional value from argument list
         // Check if options are even.
