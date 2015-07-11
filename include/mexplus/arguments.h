@@ -219,6 +219,7 @@ class InputArguments {
                        const mxArray* prhs[],
                        Definition* definition) {
     std::stringstream message;
+    MxArray config;
     if (nrhs < definition->mandatories.size()) {
       message << "Too few arguments: " << nrhs << " for at least "
               << definition->mandatories.size() << ".";
@@ -226,41 +227,87 @@ class InputArguments {
       return false;
     }
     int index = 0;
+    int fieldIndex = 0;
     for (; index < definition->mandatories.size(); ++index)
       definition->mandatories[index] = prhs[index];
-    for (; index < nrhs; ++index) {
+
+    /* If the first argument behind all mandatories is the least one and represents
+     * a structure array with only one element, it is assumed to be a config structure
+     * with fields for all optionals
+     */
+    if( nrhs - index == 1 && mxIsStruct( prhs[index] ) && mxGetNumberOfElements( prhs[index] ) == 1 )
+    {
+      config = prhs[index];
+    }
+    for( ;; )
+    {
+      std::string optionName;
+      const mxArray* optionValue;
+
+      if( config.isEmpty() )
+      {
+        // Conventional option list
+        if( index >= nrhs ) break;
       // Check if option name is valid.
-      const mxArray* option_name_array = prhs[index];
-      if (!mxIsChar(option_name_array)) {
-        message << "Option name must be char but is given "
-                << mxGetClassName(option_name_array) << ".";
-        error_message_.assign(message.str());
-        return false;
+        const mxArray* option_name_array = prhs[index++];
+        if (!mxIsChar(option_name_array)) {
+          message << "Option name must be char but is given "
+                  << mxGetClassName(option_name_array) << ".";
+          error_message_.assign(message.str());
+          return false;
+        }
+        char option_name[64];
+        if (mxGetString(option_name_array, option_name, sizeof(option_name))) {
+          message << "Option name too long.";
+          error_message_.assign(message.str());
+          return false;
+        }
+        optionName = option_name;
       }
-      char option_name[64];
-      if (mxGetString(option_name_array, option_name, sizeof(option_name))) {
-        message << "Option name too long.";
-        error_message_.assign(message.str());
-        return false;
+      else
+      {
+        // Check "config structure" for fields
+        if( fieldIndex >= config.fieldSize() ) break;
+        optionName = config.fieldName( fieldIndex );
+        if( strlen( optionName.c_str() ) > 64 )
+        {
+          message << "Option name too long.";
+          error_message_.assign(message.str());
+          return false;
+        }
       }
+
       OptionMap::iterator entry =
-          definition->optionals.find(option_name);
+          definition->optionals.find(optionName.c_str());
       if (entry == definition->optionals.end()) {
-        message << "Invalid option name: '" << option_name << "'.";
+        message << "Invalid option name: '" << optionName << "'.";
         error_message_.assign(message.str());
         return false;
       }
-      // Check if options are even.
-      if (++index >= nrhs) {
-        message << "Missing option value for option '" << option_name << "'.";
-        error_message_.assign(message.str());
-        return false;
+
+      if( config.isEmpty() )
+      {
+        // Get optional value from argument list
+        // Check if options are even.
+        if (index >= nrhs) {
+          message << "Missing option value for option '" << optionName << "'.";
+          error_message_.assign(message.str());
+          return false;
+        }
+        optionValue = prhs[index++];
+        if (entry->second)
+          mexErrMsgIdAndTxt("mexplus:arguments:warning",
+                            "Option '%s' appeared more than once.",
+                            optionName.c_str());
       }
-      if (entry->second)
-        mexErrMsgIdAndTxt("mexplus:arguments:warning",
-                          "Option '%s' appeared more than once.",
-                          option_name);
-      entry->second = prhs[index];
+      else
+      {
+        // Get optional value from "config structure"
+        optionValue = config.at(config.fieldName(fieldIndex++).c_str());
+      }
+
+      // Assign optional value
+      entry->second = optionValue;
     }
     return true;
   }
