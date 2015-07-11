@@ -244,7 +244,7 @@ class InputArguments {
       std::string optionName;
       const mxArray* optionValue;
 
-      if( config.isEmpty() )
+      if( !config )
       {
         // Conventional option list
         if( index >= nrhs ) break;
@@ -285,7 +285,7 @@ class InputArguments {
         return false;
       }
 
-      if( config.isEmpty() )
+      if( config )
       {
         // Get optional value from argument list
         // Check if options are even.
