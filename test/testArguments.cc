@@ -13,6 +13,7 @@
     mexCallMATLAB(0, NULL, 0, NULL, "drawnow")
 
 using namespace std;
+using mexplus::MxArray;
 using mexplus::InputArguments;
 using mexplus::OutputArguments;
 
@@ -74,6 +75,26 @@ void testInputsSingleFormatOptionsUpdate() {
   EXPECT(input.get<string>("Option2", "Some value.") == "Option2 value.");
 }
 
+/** Test a single format input with struct options.
+ */
+void testInputsSingleFormatStructOptions() {
+  MxArray options(MxArray::Struct());
+  options.set("Option2", "Option2 value.");
+  options.set("Option1", static_cast<double>(10));
+  MAKE_RHS(
+    rhs,
+    MAKE_VALUE(mxCreateDoubleScalar(3.2)),
+    MAKE_VALUE(mxCreateString("Text input.")),
+    MAKE_VALUE(options.release())
+  );
+  InputArguments input(rhs.size(), &rhs[0], 2, 2, "Option1", "Option2");
+  EXPECT(input.is("default"));
+  EXPECT(input.get<double>(0) == 3.2);
+  EXPECT(input.get<string>(1) == "Text input.");
+  EXPECT(input.get<double>("Option1", -1) == 10);
+  EXPECT(input.get<string>("Option2", "Some value.") == "Option2 value.");
+}
+
 /** Test a single format input with default options.
  */
 void testInputsMultipleFormats() {
@@ -124,6 +145,7 @@ void testOutputArguments() {
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   RUN_TEST(testInputsSingleFormatOptionsDefault);
   RUN_TEST(testInputsSingleFormatOptionsUpdate);
+  RUN_TEST(testInputsSingleFormatStructOptions);
   RUN_TEST(testInputsMultipleFormats);
   RUN_TEST(testOutputArguments);
 }
