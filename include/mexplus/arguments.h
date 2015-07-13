@@ -288,7 +288,8 @@ class InputArguments {
         }
         // Check if options are even.
         if (index >= nrhs) {
-          message << "Missing option value for option '" << option_name << "'.";
+          message << "Missing option value for option '" << option_name
+                  << "'.";
           error_message_.assign(message.str());
           return false;
         }
