@@ -430,7 +430,7 @@ Known issues
 
  * Matlab keeps a string in `uint16` while the `std::string` in C++ is actually
    `std::basic_string<char>`. Because of this, signed integers might break
-   if saved inside `std::string`.
+   if saved inside `std::string`. To do unicode-safe conversion, use `unicode2native` and `native2unicode` before and after calling a MEX function.
 
 TODO
 ----
