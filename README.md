@@ -118,6 +118,8 @@ methods
 
   % Other methods...
 end
+
+end
 ```
 
 _Build_
