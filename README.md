@@ -22,35 +22,43 @@ time, or in the `CXXFLAGS` variable in the MEX options located at
 Example
 -------
 
-Suppose we have a Database class in C++ and will design a MEX interface to it.
-Create the following files.
+Suppose we have the following Database class in C++, and we would like to create a Matlab wrapper.
 
-`Database.cc`
+```c++
+// Database.h
+
+// Hypothetical database class to be wrapped.
+class Database {
+public:
+  Database(const std::string& filename);
+  virtual ~Database();
+  std::string query(const std::string& key) const;
+};
+```
+
+We will need to create two files.
+
+  * `Database_.cc`: C++ interface file.
+  * `Database.m`: Matlab interface file.
+
+`Database_.cc`
 
 C++ implementation of the MEX interface. It provides MEX entry points by
 `MEX_DEFINE` macros and `MEX_DISPATCH` macro at the end. Notice how inputs and
 outputs are wrapped by mexplus `InputArguments` and `OutputArguments` class.
 They automatically convert majority of C++ types to/from `mxArray`, using C++
-template. The `Session` class keeps instances of `Database` objects between MEX
-calls, allowing the MEX binary to be stateful.
+template. The `Session` class keeps `Database` instances between MEX calls,
+allowing the MEX binary to be stateful.
 
 ```c++
-// Demonstration of MEX interface to a hypothetical database.
+// Database_.cc: C++ interface file to the Database class.
 #include <mexplus.h>
+#include "Database.h"
 
-using namespace std;
 using namespace mexplus;
+using namespace std;
 
-// Hypothetical database class to be wrapped.
-class Database {
-public:
-  Database(const string& filename);
-  virtual ~Database();
-  string query(const string& key) const;
-  // Other methods...
-};
-
-// This initializes the instance session storage for Database.
+// This initializes a session storage for Database instances.
 template class mexplus::Session<Database>;
 
 // Create a new instance of Database and return its session id.
@@ -79,21 +87,20 @@ MEX_DEFINE(query) (int nlhs, mxArray* plhs[],
   output.set(0, database.query(input.get<string>(1)));
 }
 
-// Other entry points...
-
 MEX_DISPATCH
 ```
 
 `Database.m`
 
-Matlab class interface file. The `id_` property keeps the session ID in the MEX
-binary. Each method is a wrapper around corresponding MEX entry points defined
-in the C++ file. The first argument of `Database_()` MEX function is the name
-defined using `MEX_DEFINE()` macro in the above file.
+Matlab class interface file. The `id_` property keeps the session ID (handle)
+in the MEX binary. Each method is a wrapper around corresponding MEX entry
+points defined in the C++ file. The first argument of `Database_()` MEX function
+is the name defined using `MEX_DEFINE()` macro in the above file.
 
 ```matlab
 classdef Database < handle
-%DATABASE Hypothetical Matlab database API.
+%DATABASE Matlab interface to Database.
+
 properties (Access = private)
   id_ % ID of the session instance.
 end
@@ -111,12 +118,10 @@ methods
   end
 
   function result = query(this, key)
-  %QUERY Query to the database.
+  %QUERY Query something to the database.
     assert(isscalar(this));
     result = Database_('query', this.id_, key);
   end
-
-  % Other methods...
 end
 
 end
@@ -128,17 +133,17 @@ The above C++ can be compiled by `mex` command. The output name `Database_` is
 the MEX function name used in `Database.m`.
 
 ```matlab
-mex -Iinclude Database.cc -output Database_
+mex -Iinclude Database_.cc -output Database_
 ```
 
 In Linux, you might need to add `CXXFLAGS="$CXXFLAGS -std=c++11"` to `mex`
 command. i.e.,
 
-```
-mex -Iinclude Database.cc -output Database_ CXXFLAGS="\$CXXFLAGS -std=c++11"
+```bash
+mex -Iinclude Database_.cc -output Database_ CXXFLAGS="\$CXXFLAGS -std=c++11"
 ```
 
-After this, the Database class is available in Matlab.
+Once compiled, the Database class is available in Matlab.
 
 ```matlab
 database = Database('mydatabase.db');
@@ -305,10 +310,10 @@ assign to the output when the number of outputs are less than 3.
 OutputArguments output(nlhs, plhs, 3);
 output.set(0, 1);
 output.set(1, "foo");
-MxArray cell = MxArray::Cell(1, 2);
-cell.set(0, 0);
-cell.set(1, "value");
-output.set(2, cell.release());
+MxArray cell_array(MxArray::Cell(1, 2));
+cell_array.set(0, 0);
+cell_array.set(1, "value");
+output.set(2, cell_array.release());
 ```
 
 Data conversion
@@ -344,26 +349,26 @@ get a mutable `mxArray` pointer after construction.
 
 ```c++
 // Read access.
-MxArray cell(prhs[0]);   // {x, y, ...}
-int x = cell.at<int>(0);
-vector<double> y = cell.at<vector<double> >(1);
+MxArray cell_array(prhs[0]);   // {x, y, ...}
+int x = cell_array.at<int>(0);
+vector<double> y = cell_array.at<vector<double> >(1);
 
 MxArray struct_array(prhs[0]);   // struct('field1', x, ...)
 int x = struct_array.at<int>("field1");
 vector<double> y = struct_array.at<vector<double> >("field2");
 
-MxArray numeric(prhs[0]);   // [x, y, ...]
-double x = numeric.at<double>(0);
-int y = numeric.at<int>(1);
+MxArray numeric_array(prhs[0]);   // [x, y, ...]
+double x = numeric_array.at<double>(0);
+int y = numeric_array.at<int>(1);
 ```
 
 ```c++
 // Write access.
-MxArray cell(MxArray::Cell(1, 3));
-cell.set(0, 12);
-cell.set(1, "text value.");
-cell.set(2, vector<double>(4, 0));
-plhs[0] = cell.release(); // {12, 'text value.', [0, 0, 0, 0]}
+MxArray cell_array(MxArray::Cell(1, 3));
+cell_array.set(0, 12);
+cell_array.set(1, "text value.");
+cell_array.set(2, vector<double>(4, 0));
+plhs[0] = cell_array.release(); // {12, 'text value.', [0, 0, 0, 0]}
 
 MxArray struct_array(MxArray::Struct());
 struct_array.set("field1", 12);
@@ -371,12 +376,12 @@ struct_array.set("field2", "text value.");
 struct_array.set("field3", vector<double>(4, 0));
 plhs[0] = struct_array.release(); // struct('field1', 12, ...)
 
-MxArray numeric(MxArray::Numeric<double>(2, 2));
-numeric.set(0, 0, 1);
-numeric.set(0, 1, 2);
-numeric.set(1, 0, 3);
-numeric.set(1, 1, 4);
-plhs[0] = numeric.release(); // [1, 2; 3, 4]
+MxArray numeric_array(MxArray::Numeric<double>(2, 2));
+numeric_array.set(0, 0, 1);
+numeric_array.set(0, 1, 2);
+numeric_array.set(1, 0, 3);
+numeric_array.set(1, 1, 4);
+plhs[0] = numeric_array.release(); // [1, 2; 3, 4]
 ```
 
 To add your own data conversion, define in `namespace mexplus` a template
