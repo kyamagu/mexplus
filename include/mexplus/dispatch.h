@@ -65,8 +65,16 @@
 #include <memory>
 #include <string>
 
-#ifndef MEXPLUS_ATEXIT
-#define MEXPLUS_ATEXIT
+#ifndef MEXPLUS_AT_EXIT
+#define MEXPLUS_AT_EXIT
+#endif
+
+#ifndef MEXPLUS_AT_INIT
+#define MEXPLUS_AT_INIT
+#endif
+
+#ifndef MEXPLUS_AT_ERROR
+#define MEXPLUS_AT_ERROR(name)
 #endif
 
 namespace mexplus {
@@ -348,6 +356,7 @@ void Operation_##name::operator()
 #define MEX_DISPATCH \
 void mexFunction(int nlhs, mxArray *plhs[], \
                  int nrhs, const mxArray *prhs[]) { \
+  MEXPLUS_AT_INIT;\
   if (nrhs < 1 || !mxIsChar(prhs[0])) \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
                       "Invalid argument: missing operation."); \
@@ -356,11 +365,13 @@ void mexFunction(int nlhs, mxArray *plhs[], \
       mxGetChars(prhs[0]) + mxGetNumberOfElements(prhs[0])); \
   std::auto_ptr<mexplus::Operation> operation(\
       mexplus::OperationFactory::create(operation_name)); \
-  if (operation.get() == NULL) \
+  if (operation.get() == NULL) { \
+    MEXPLUS_AT_ERROR(operation_name); \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
         "Invalid operation: %s", operation_name.c_str()); \
+  } \
   (*operation)(nlhs, plhs, nrhs - 1, prhs + 1); \
-  MEXPLUS_ATEXIT; \
+  MEXPLUS_AT_EXIT; \
 }
 
 #endif  // INCLUDE_MEXPLUS_DISPATCH_H_
