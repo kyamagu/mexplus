@@ -59,6 +59,8 @@
 #include <vector>
 #include "mexplus/mxtypes.h"
 
+#pragma warning( once : 4244 )
+
 /** Macro definitions.
  */
 #define MEXPLUS_CHECK_NOTNULL(pointer) \
@@ -120,7 +122,7 @@ class MxArray {
   /** MxArray constructor from mutable mxArray*. MxArray will manage memory.
    * @param array mxArray pointer.
    */
-  explicit MxArray(mxArray* array) : array_(array), owner_(array) {}
+  explicit MxArray(mxArray* array) : array_(array), owner_(array != NULL) {}
   /** Assignment from const mxArray*. MxArray will not manage memory.
    */
   MxArray& operator= (const mxArray* rhs) {
@@ -180,7 +182,7 @@ class MxArray {
     if (array_ && owner_)
       mxDestroyArray(array_);
     array_ = array;
-    owner_ = array;
+    owner_ = (array != NULL);
   }
   /** Release managed mxArray* pointer, or clone if not owner.
    * @return Unmanaged mxArray*. Always caller must destroy.
@@ -519,7 +521,7 @@ class MxArray {
   }
   /** Number of elements in an array.
    */
-  inline mwSize size() const { return mxGetNumberOfElements(array_); }
+  inline mwSize size() const { return (mwSize)mxGetNumberOfElements(array_); }
   /** Number of dimensions.
    */
   inline mwSize dimensionSize() const {
@@ -533,10 +535,10 @@ class MxArray {
   }
   /** Number of rows in an array.
    */
-  inline mwSize rows() const { return mxGetM(array_); }
+  inline mwSize rows() const { return (mwSize)mxGetM(array_); }
   /** Number of columns in an array.
    */
-  inline mwSize cols() const { return mxGetN(array_); }
+  inline mwSize cols() const { return (mwSize)mxGetN(array_); }
   /** Number of fields in a struct array.
    */
   inline int fieldSize() const { return mxGetNumberOfFields(array_); }
@@ -578,7 +580,7 @@ class MxArray {
    * @return linear offset of the specified subscript index.
    */
   mwIndex subscriptIndex(const std::vector<mwIndex>& subscripts) const {
-    return mxCalcSingleSubscript(array_, subscripts.size(), &subscripts[0]);
+    return mxCalcSingleSubscript(array_, (int)subscripts.size(), &subscripts[0]);
   }
   /** Determine whether input is cell array.
    */
@@ -677,7 +679,7 @@ class MxArray {
   }
   /** Element size.
    */
-  int elementSize() const { return mxGetElementSize(array_); }
+  int elementSize() const { return (int)mxGetElementSize(array_); }
   /** Determine whether input is NaN (Not-a-Number).
    */
   static inline bool IsNaN(double value) { return mxIsNaN(value); }
@@ -867,7 +869,7 @@ class MxArray {
                          R
                        >::type* value) {
     MEXPLUS_ASSERT(!mxIsComplex(array), "Non-complex array expected!");
-    *value = *(reinterpret_cast<T*>(mxGetData(array)) + index);
+    *value = (R)*(reinterpret_cast<T*>(mxGetData(array)) + index);
   }
   /** Explicit floating point element assignment.
    */
@@ -946,7 +948,7 @@ class MxArray {
                          MxCharCompound<R>::value,
                          R
                        >::type* value) {
-    mwSize array_size = mxGetNumberOfElements(array);
+    mwSize array_size = (mwSize)mxGetNumberOfElements(array);
     if (!mxIsComplex(array)) {
       T* data_pointer = reinterpret_cast<T*>(mxGetData(array));
       value->assign(data_pointer, data_pointer + array_size);
@@ -955,8 +957,10 @@ class MxArray {
       T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
       value->resize(array_size);
       for (mwSize i = 0; i < array_size; ++i)
-        (*value)[i] =
-            std::abs(std::complex<double>(*(real_part++), *(imag_part++)));
+      {
+        double mag = std::abs(std::complex<double>((double)*(real_part++), (double)*(imag_part++)));
+        (*value)[i] = (T)mag;
+      }
     }
   }
   /** Explicit complex array assigment.
@@ -1009,7 +1013,7 @@ class MxArray {
    */
   template <typename T>
   static void assignCellTo(const mxArray* array, T* value) {
-    mwSize array_size = mxGetNumberOfElements(array);
+    mwSize array_size = (mwSize)mxGetNumberOfElements(array);
     value->resize(array_size);
     for (int i = 0; i < array_size; ++i) {
       const mxArray* element = mxGetCell(array, i);
