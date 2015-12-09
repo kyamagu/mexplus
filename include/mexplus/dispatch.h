@@ -154,6 +154,8 @@ class OperationFactory {
     }
     return it;
   }
+
+ public:
   /** Obtain a pointer to the registration table.
    */
   static RegistryMap* registry() {
