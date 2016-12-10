@@ -123,8 +123,8 @@ class OperationCreator {
 template <class OperationClass>
 class OperationCreatorImpl : public OperationCreator {
  public:
-  explicit OperationCreatorImpl(OperationNameAdmitter* admitter) :
-    OperationCreator(admitter) {}
+  explicit OperationCreatorImpl(OperationNameAdmitter* admitter, const char* tag) :
+    OperationCreator(admitter) {if(tag) mexPrintf("Tag: %s\n", tag); }
   virtual Operation* create() { return new OperationClass; }
 };
 
@@ -323,7 +323,7 @@ class Operation_##name : public mexplus::Operation { \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
-    Operation_##name::creator_(Operation_##name::Operation_Admitter); \
+    Operation_##name::creator_(Operation_##name::Operation_Admitter, NULL); \
 void Operation_##name::operator()
 
 /** Define a MEX API function using a private admitter. Example:
@@ -340,6 +340,7 @@ void Operation_##name::operator()
  * }
  */
 #define MEX_DEFINE2(name, admitter) \
+static const char* tag = NULL /*#name*/; \
 class Operation_##name : public mexplus::Operation { \
  public: \
   virtual void operator()(int nlhs, \
@@ -350,7 +351,7 @@ class Operation_##name : public mexplus::Operation { \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
-    Operation_##name::creator_(admitter); \
+    Operation_##name::creator_(admitter, tag); \
 void Operation_##name::operator()
 
 /** Insert a function dispatching code. Use once per MEX binary.
