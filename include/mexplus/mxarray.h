@@ -468,6 +468,23 @@ class MxArray {
   MEXPLUS_ASSERT(isOwner(), "Must be an owner to set.");
     set(array_, index, value);
   }
+  /** Cell element write accessor.
+   * @param row index of the first dimension of the array element.
+   * @param column index of the first dimension of the array element.
+   * @param value cell element to be inserted.
+   */
+  void set(mwIndex row, mwIndex column, mxArray* value) {
+  MEXPLUS_ASSERT(isOwner(), "Must be an owner to set.");
+    set(array_, subscriptIndex(row, column), value);
+  }
+  /** Cell element write accessor.
+   * @param subscripts subscript index of the element.
+   * @param value value of the field.
+   */
+  void set(const std::vector<mwIndex>& subscripts, mxArray* value) {
+  MEXPLUS_ASSERT(isOwner(), "Must be an owner to set.");
+    set(array_, subscriptIndex(subscripts), value);
+  }
   /** Struct element write accessor.
    * @param field field name of the struct array.
    * @param value value of the field.
