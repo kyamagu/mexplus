@@ -207,6 +207,10 @@ class MxArray {
    * @return const mxArray* pointer.
    */
   inline const mxArray* get() const { return array_; }
+  /** Get raw mxArray*.
+   * @return mxArray* pointer.
+   */
+  inline mxArray* getMutable() { return array_; }
   /** Return true if the array is not NULL.
    */
   operator bool() const { return array_ != NULL; }
@@ -339,7 +343,7 @@ class MxArray {
     MEXPLUS_CHECK_NOTNULL(array);
     MEXPLUS_CHECK_NOTNULL(value);
     MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
-    MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+    MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                    "Index out of range: %u.",
                    index);
     mxDestroyArray(mxGetCell(array, index));
@@ -359,7 +363,7 @@ class MxArray {
     MEXPLUS_CHECK_NOTNULL(array);
     MEXPLUS_CHECK_NOTNULL(value);
     MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
-    MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+    MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                    "Index out of range: %u.",
                    index);
     int field_number = mxGetFieldNumber(array, field.c_str());
@@ -576,7 +580,7 @@ class MxArray {
   std::vector<std::string> fieldNames() const {
     MEXPLUS_ASSERT(isStruct(), "Expected a struct array.");
     std::vector<std::string> fields(fieldSize());
-    for (int i = 0; i < fields.size(); ++i)
+    for (size_t i = 0; i < fields.size(); ++i)
       fields[i] = fieldName(i);
     return fields;
   }
@@ -1038,7 +1042,7 @@ class MxArray {
   static void assignCellTo(const mxArray* array, T* value) {
     mwSize array_size = static_cast<mwSize>(mxGetNumberOfElements(array));
     value->resize(array_size);
-    for (int i = 0; i < array_size; ++i) {
+    for (size_t i = 0; i < array_size; ++i) {
       const mxArray* element = mxGetCell(array, i);
       MEXPLUS_CHECK_NOTNULL(element);
       (*value)[i] = to<typename T::value_type>(element);
@@ -1322,7 +1326,7 @@ void MxArray::toInternal(const mxArray* array,
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
   mwSize array_size = mxGetNumberOfElements(array);
   value->resize(array_size);
-  for (int i = 0; i < array_size; ++i) {
+  for (size_t i = 0; i < array_size; ++i) {
     const mxArray* element = mxGetCell(array, i);
     (*value)[i] = to<typename T::value_type>(element);
   }
@@ -1342,7 +1346,7 @@ void MxArray::atInternal(const mxArray* array, mwIndex index,
                          MxCharType<T>::value, T>::type* value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_CHECK_NOTNULL(value);
-  MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+  MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   switch (mxGetClassID(array)) {
@@ -1372,7 +1376,7 @@ void MxArray::atInternal(const mxArray* array, mwIndex index,
                            !MxComplexType<T>::value, T>::type* value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_CHECK_NOTNULL(value);
-  MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+  MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
@@ -1386,7 +1390,7 @@ void MxArray::atInternal(const mxArray* array,
                          T* value) {
   MEXPLUS_CHECK_NOTNULL(array);
   MEXPLUS_CHECK_NOTNULL(value);
-  MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+  MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
@@ -1408,7 +1412,7 @@ void MxArray::setInternal(mxArray* array,
                             !std::is_compound<T>::value ||
               MxComplexType<T>::value, T>::type& value) {
   MEXPLUS_CHECK_NOTNULL(array);
-  MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+  MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   switch (mxGetClassID(array)) {
@@ -1444,7 +1448,7 @@ void MxArray::setInternal(mxArray* array,
                           const typename std::enable_if<
                             MxCellType<T>::value, T>::type& value) {
   MEXPLUS_CHECK_NOTNULL(array);
-  MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+  MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
@@ -1459,7 +1463,7 @@ void MxArray::setInternal(mxArray* array,
                           mwIndex index,
                           const T& value) {
   MEXPLUS_CHECK_NOTNULL(array);
-  MEXPLUS_ASSERT(index < mxGetNumberOfElements(array),
+  MEXPLUS_ASSERT(static_cast<size_t>(index) < mxGetNumberOfElements(array),
                  "Index out of range: %u.",
                  index);
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
