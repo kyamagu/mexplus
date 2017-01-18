@@ -65,8 +65,16 @@
 #include <memory>
 #include <string>
 
-#ifndef MEXPLUS_ATEXIT
-#define MEXPLUS_ATEXIT
+#ifndef MEXPLUS_AT_EXIT
+#define MEXPLUS_AT_EXIT
+#endif
+
+#ifndef MEXPLUS_AT_INIT
+#define MEXPLUS_AT_INIT
+#endif
+
+#ifndef MEXPLUS_AT_ERROR
+#define MEXPLUS_AT_ERROR(name)
 #endif
 
 namespace mexplus {
@@ -115,8 +123,12 @@ class OperationCreator {
 template <class OperationClass>
 class OperationCreatorImpl : public OperationCreator {
  public:
-  explicit OperationCreatorImpl(OperationNameAdmitter* admitter) :
-    OperationCreator(admitter) {}
+  explicit OperationCreatorImpl(OperationNameAdmitter* admitter,
+                                const char* tag) :
+      OperationCreator(admitter) {
+    if (tag)
+      mexPrintf("Tag: %s\n", tag);
+  }
   virtual Operation* create() { return new OperationClass; }
 };
 
@@ -125,6 +137,7 @@ class OperationCreatorImpl : public OperationCreator {
 class OperationFactory {
  public:
   typedef std::map<OperationNameAdmitter*, OperationCreator*> RegistryMap;
+
   /** Register a new creator.
    */
   friend void CreateOperation(OperationNameAdmitter* admitter,
@@ -136,6 +149,12 @@ class OperationFactory {
     return (it == registry()->end()) ?
       static_cast<Operation*>(NULL) : it->second->create();
   }
+  /** Obtain a pointer to the registration table.
+   */
+  static RegistryMap* registry() {
+    static RegistryMap registry_table;
+    return &registry_table;
+  }
 
  private:
   static RegistryMap::const_iterator find(const std::string& name) {
@@ -145,12 +164,6 @@ class OperationFactory {
         return it;
     }
     return it;
-  }
-  /** Obtain a pointer to the registration table.
-   */
-  static RegistryMap* registry() {
-    static RegistryMap registry_table;
-    return &registry_table;
   }
 };
 
@@ -313,7 +326,7 @@ class Operation_##name : public mexplus::Operation { \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
-    Operation_##name::creator_(Operation_##name::Operation_Admitter); \
+    Operation_##name::creator_(Operation_##name::Operation_Admitter, NULL); \
 void Operation_##name::operator()
 
 /** Define a MEX API function using a private admitter. Example:
@@ -330,6 +343,7 @@ void Operation_##name::operator()
  * }
  */
 #define MEX_DEFINE2(name, admitter) \
+static const char* tag = NULL /*#name*/; \
 class Operation_##name : public mexplus::Operation { \
  public: \
   virtual void operator()(int nlhs, \
@@ -340,7 +354,7 @@ class Operation_##name : public mexplus::Operation { \
   static const mexplus::OperationCreatorImpl<Operation_##name> creator_; \
 }; \
 const mexplus::OperationCreatorImpl<Operation_##name> \
-    Operation_##name::creator_(admitter); \
+    Operation_##name::creator_(admitter, tag); \
 void Operation_##name::operator()
 
 /** Insert a function dispatching code. Use once per MEX binary.
@@ -348,6 +362,7 @@ void Operation_##name::operator()
 #define MEX_DISPATCH \
 void mexFunction(int nlhs, mxArray *plhs[], \
                  int nrhs, const mxArray *prhs[]) { \
+  MEXPLUS_AT_INIT;\
   if (nrhs < 1 || !mxIsChar(prhs[0])) \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
                       "Invalid argument: missing operation."); \
@@ -356,11 +371,13 @@ void mexFunction(int nlhs, mxArray *plhs[], \
       mxGetChars(prhs[0]) + mxGetNumberOfElements(prhs[0])); \
   std::auto_ptr<mexplus::Operation> operation(\
       mexplus::OperationFactory::create(operation_name)); \
-  if (operation.get() == NULL) \
+  if (operation.get() == NULL) { \
+    MEXPLUS_AT_ERROR(operation_name); \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
         "Invalid operation: %s", operation_name.c_str()); \
+  } \
   (*operation)(nlhs, plhs, nrhs - 1, prhs + 1); \
-  MEXPLUS_ATEXIT; \
+  MEXPLUS_AT_EXIT; \
 }
 
 #endif  // INCLUDE_MEXPLUS_DISPATCH_H_
