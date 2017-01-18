@@ -4,4 +4,3 @@
 *.mex*
 .DS_Store
 mexopts.sh
-/test/TestArray.m

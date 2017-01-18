@@ -123,8 +123,12 @@ class OperationCreator {
 template <class OperationClass>
 class OperationCreatorImpl : public OperationCreator {
  public:
-  explicit OperationCreatorImpl(OperationNameAdmitter* admitter, const char* tag) :
-    OperationCreator(admitter) {if(tag) mexPrintf("Tag: %s\n", tag); }
+  explicit OperationCreatorImpl(OperationNameAdmitter* admitter,
+                                const char* tag) :
+      OperationCreator(admitter) {
+    if (tag)
+      mexPrintf("Tag: %s\n", tag);
+  }
   virtual Operation* create() { return new OperationClass; }
 };
 
@@ -133,6 +137,7 @@ class OperationCreatorImpl : public OperationCreator {
 class OperationFactory {
  public:
   typedef std::map<OperationNameAdmitter*, OperationCreator*> RegistryMap;
+
   /** Register a new creator.
    */
   friend void CreateOperation(OperationNameAdmitter* admitter,
@@ -144,6 +149,12 @@ class OperationFactory {
     return (it == registry()->end()) ?
       static_cast<Operation*>(NULL) : it->second->create();
   }
+  /** Obtain a pointer to the registration table.
+   */
+  static RegistryMap* registry() {
+    static RegistryMap registry_table;
+    return &registry_table;
+  }
 
  private:
   static RegistryMap::const_iterator find(const std::string& name) {
@@ -153,14 +164,6 @@ class OperationFactory {
         return it;
     }
     return it;
-  }
-
- public:
-  /** Obtain a pointer to the registration table.
-   */
-  static RegistryMap* registry() {
-    static RegistryMap registry_table;
-    return &registry_table;
   }
 };
 
