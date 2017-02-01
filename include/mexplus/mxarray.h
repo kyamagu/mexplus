@@ -223,6 +223,13 @@ class MxArray {
    */
   template <typename T>
   static mxArray* Numeric(int rows = 1, int columns = 1);
+  /** Create a new numeric (real or complex) matrix.
+   * @param ndim Number of dimensions.
+   * @param dims Dimensions array. Each element in the dimensions array contains
+   *             the size of the array in that dimension.
+   */
+  template <typename T>
+  static mxArray* Numeric(std::vector<std::size_t> dims);
   /** Create a new logical matrix.
    * @param rows Number of rows.
    * @param columns Number of cols.
@@ -1489,6 +1496,18 @@ mxArray* MxArray::Numeric(int rows, int columns) {
                                            MxTypes<Scalar>::complexity);
   MEXPLUS_CHECK_NOTNULL(numeric);
   return numeric;
+}
+
+template <typename T>
+mxArray* MxArray::Numeric(std::vector<std::size_t> dims) {
+	typedef typename std::enable_if<
+		MxComplexOrArithmeticType<T>::value, T>::type Scalar;
+	mxArray* numeric = mxCreateNumericArray(dims.size(),
+		&dims[0],
+		MxTypes<Scalar>::class_id,
+		MxTypes<Scalar>::complexity);
+	MEXPLUS_CHECK_NOTNULL(numeric);
+	return numeric;
 }
 
 template <typename T>
