@@ -1503,9 +1503,9 @@ mxArray* MxArray::Numeric(std::vector<std::size_t> dims) {
 	typedef typename std::enable_if<
 		MxComplexOrArithmeticType<T>::value, T>::type Scalar;
 	mxArray* numeric = mxCreateNumericArray(dims.size(),
-		&dims[0],
-		MxTypes<Scalar>::class_id,
-		MxTypes<Scalar>::complexity);
+                                          &dims[0],
+                                          MxTypes<Scalar>::class_id,
+                                          MxTypes<Scalar>::complexity);
 	MEXPLUS_CHECK_NOTNULL(numeric);
 	return numeric;
 }
