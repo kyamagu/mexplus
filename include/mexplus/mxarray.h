@@ -225,8 +225,8 @@ class MxArray {
   static mxArray* Numeric(int rows = 1, int columns = 1);
   /** Create a new numeric (real or complex) matrix.
    * @param ndim Number of dimensions.
-   * @param dims Dimensions array. Each element in the dimensions array contains
-   *             the size of the array in that dimension.
+   * @param dims Dimensions array. Each element in the dimensions array
+   *             contains the size of the array in that dimension.
    */
   template <typename T>
   static mxArray* Numeric(std::vector<std::size_t> dims);
@@ -990,10 +990,11 @@ class MxArray {
       T* real_part = reinterpret_cast<T*>(mxGetPr(array));
       T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
       value->resize(array_size);
-      for (mwSize i = 0; i < array_size; ++i)
-      {
-        double mag = std::abs(std::complex<double>((double)*(real_part++), (double)*(imag_part++)));
-        (*value)[i] = (T)mag;
+      for (mwSize i = 0; i < array_size; ++i) {
+        double mag = std::abs(std::complex<double>(
+            static_cast<double>(*(real_part++)),
+            static_cast<double>(*(imag_part++))));
+        (*value)[i] = static_cast<T>(mag);
       }
     }
   }
