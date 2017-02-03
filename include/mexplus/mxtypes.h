@@ -6,7 +6,7 @@
 #ifndef INCLUDE_MEXPLUS_MXTYPES_H_
 #define INCLUDE_MEXPLUS_MXTYPES_H_
 
-#include <matrix.h>
+#include <mex.h>
 #include <complex>
 #include <type_traits>
 
