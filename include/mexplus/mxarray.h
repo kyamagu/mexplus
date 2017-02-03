@@ -612,7 +612,7 @@ class MxArray {
   mwIndex subscriptIndex(const std::vector<mwIndex>& subscripts) const {
     return mxCalcSingleSubscript(array_,
                                  static_cast<mwSize>(subscripts.size()),
-                                 &subscripts[0]);
+                                 const_cast<mwIndex*>(&subscripts[0]));
   }
   /** Determine whether input is cell array.
    */

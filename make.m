@@ -105,7 +105,7 @@ function buildTarget(target, varargin)
   if skipBuild(target)
     return;
   end
-  if isunix()
+  if isunix() && ~ismac()
     varargin = [varargin, 'CXXFLAGS="$CXXFLAGS -std=c++11"'];
   end
   command = sprintf('mex%s -output ''%s'' %s%s', ...
