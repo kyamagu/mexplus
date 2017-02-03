@@ -5,7 +5,6 @@
 
 language: cpp
 sudo: required
-dist: xenial
 compiler:
 - gcc
 
