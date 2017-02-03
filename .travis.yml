@@ -19,6 +19,6 @@ branches:
 before_install:
   - sudo add-apt-repository -y ppa:octave/stable
   - sudo apt-get update -qq
-  - sudo apt-get install -y octave liboctave-dev
+  - sudo apt-get install -qq octave liboctave-dev
 
-script: octave-cli --eval "try,make test --mex;catch e,disp(e.message);exit(1);end"
+script: octave-cli --eval "try,make test;catch e,disp(e.message);exit(1);end"
