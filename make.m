@@ -107,7 +107,7 @@ function buildTarget(target, varargin)
   end
   if exist('OCTAVE_VERSION', 'builtin')
     varargin = [varargin, '--mex'];
-    setenv('CXXFLAGS','-std=c++11');
+    setenv('CXXFLAGS','-std=c++0x');
   elseif isunix()
     varargin = [varargin, 'CXXFLAGS="$CXXFLAGS -std=c++11"'];
   end
