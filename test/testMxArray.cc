@@ -281,6 +281,86 @@ void testMxArrayStruct() {
 
 }  // namespace
 
+/** Custom cell object for conversion test.
+ */
+struct MyCellObject {
+  string name;
+  vector<float> value;
+};
+
+/** Custom struct object for conversion test.
+ */
+struct MyStructObject {
+  string name;
+  vector<float> value;
+};
+
+namespace mexplus {
+
+template <>
+mxArray* MxArray::from(const MyCellObject& object) {
+  MxArray cell_array(MxArray::Cell(1, 2));
+  cell_array.set(0, object.name);
+  cell_array.set(1, object.value);
+  return cell_array.release();
+}
+
+template <>
+void MxArray::to(const mxArray* array, MyCellObject* object) {
+  MxArray cell_array(array);
+  object->name = cell_array.at<string>(0);
+  object->value = cell_array.at<vector<float> >(1);
+}
+
+template <>
+mxArray* MxArray::from(const MyStructObject& object) {
+  MxArray struct_array(MxArray::Struct());
+  struct_array.set("name", object.name);
+  struct_array.set("value", object.value);
+  return struct_array.release();
+}
+
+template <>
+void MxArray::to(const mxArray* array, MyStructObject* object) {
+  MxArray struct_array(array);
+  object->name = struct_array.at<string>("name");
+  object->value = struct_array.at<vector<float> >("value");
+}
+
+}  // namespace mexplus
+
+namespace {
+
+void testCustomCell() {
+  MyCellObject object, object2;
+  object.name = "foo";
+  object.value = vector<float>(10, 1);
+  MxArray array(MxArray::from(object));
+  EXPECT(array);
+  EXPECT(array.isCell());
+  EXPECT(array.at<string>(0) == "foo");
+  EXPECT(array.at<vector<float> >(1).size() == 10);
+  MxArray::to(array.get(), &object2);
+  EXPECT(object.name == object2.name);
+  EXPECT(object.value.size() == object2.value.size());
+}
+
+void testCustomStruct() {
+  MyStructObject object, object2;
+  object.name = "foo";
+  object.value = vector<float>(10, 1);
+  MxArray array(MxArray::from(object));
+  EXPECT(array);
+  EXPECT(array.isStruct());
+  EXPECT(array.at<string>("name") == "foo");
+  EXPECT(array.at<vector<float> >("value").size() == 10);
+  MxArray::to(array.get(), &object2);
+  EXPECT(object.name == object2.name);
+  EXPECT(object.value.size() == object2.value.size());
+}
+
+}  // namespace
+
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   RUN_TEST(testAllFundamentalScalar);
   RUN_TEST(testAllFundamentalVector);
@@ -289,4 +369,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   RUN_TEST(testMxArrayString);
   RUN_TEST(testMxArrayCell);
   RUN_TEST(testMxArrayStruct);
+  RUN_TEST(testCustomStruct);
+  RUN_TEST(testCustomCell);
 }
