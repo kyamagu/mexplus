@@ -1389,8 +1389,9 @@ void MxArray::atInternal(const mxArray* array, mwIndex index,
                  index);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
   const mxArray* element = mxGetCell(array, index);
-  toInternal<T>(element, value);
+  to<T>(element, value);
 }
+
 template <typename T>
 void MxArray::atInternal(const mxArray* array,
                          const std::string& field,
@@ -1404,7 +1405,7 @@ void MxArray::atInternal(const mxArray* array,
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
   const mxArray* element = mxGetField(array, index, field.c_str());
   MEXPLUS_ASSERT(element, "Invalid field name %s.", field.c_str());
-  toInternal<T>(element, value);
+  to<T>(element, value);
 }
 
 /*************************************************************/
