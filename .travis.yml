@@ -21,4 +21,4 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq octave liboctave-dev
 
-script: octave-cli --eval "try,make test;catch e,disp(e.message);exit(1);end"
+script: octave-cli --eval "make test"
