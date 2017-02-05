@@ -1,12 +1,28 @@
 function testAll
 %TESTALL Test mexplus library.
   addpath(fileparts(mfilename('fullpath')));
-  testMxTypes;
-  testMxArray;
-  testArguments;
-  testDispatch;
-  testSession;
-  testString;
+  tests = { ...
+    @testMxTypes, ...
+    @testMxArray, ...
+    @testArguments, ...
+    @testDispatch, ...
+    @testSession, ...
+    @testString};
+  passed = 0;
+  for i = 1:numel(tests)
+    try
+      feval(tests{i});
+      fprintf('=> PASS: %s\n', func2str(tests{i}));
+      passed = passed + 1;
+    catch exception
+      disp(exception.message);
+      fprintf('=> FAIL: %s\n', func2str(tests{i}));
+    end
+  end
+  fprintf('%d of %d passed\n', passed, numel(tests));
+  if passed ~= numel(tests)
+    exit(1);
+  end
 end
 
 function expectError(identifier, function_handle)
