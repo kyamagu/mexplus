@@ -223,6 +223,13 @@ class MxArray {
    */
   template <typename T>
   static mxArray* Numeric(int rows = 1, int columns = 1);
+  /** Create a new numeric (real or complex) matrix.
+   * @param ndim Number of dimensions.
+   * @param dims Dimensions array. Each element in the dimensions array
+   *             contains the size of the array in that dimension.
+   */
+  template <typename T>
+  static mxArray* Numeric(std::vector<std::size_t> dims);
   /** Create a new logical matrix.
    * @param rows Number of rows.
    * @param columns Number of cols.
@@ -605,7 +612,7 @@ class MxArray {
   mwIndex subscriptIndex(const std::vector<mwIndex>& subscripts) const {
     return mxCalcSingleSubscript(array_,
                                  static_cast<mwSize>(subscripts.size()),
-                                 &subscripts[0]);
+                                 const_cast<mwIndex*>(&subscripts[0]));
   }
   /** Determine whether input is cell array.
    */
@@ -983,10 +990,11 @@ class MxArray {
       T* real_part = reinterpret_cast<T*>(mxGetPr(array));
       T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
       value->resize(array_size);
-      for (mwSize i = 0; i < array_size; ++i)
-      {
-        double mag = std::abs(std::complex<double>((double)*(real_part++), (double)*(imag_part++)));
-        (*value)[i] = (T)mag;
+      for (mwSize i = 0; i < array_size; ++i) {
+        double mag = std::abs(std::complex<double>(
+            static_cast<double>(*(real_part++)),
+            static_cast<double>(*(imag_part++))));
+        (*value)[i] = static_cast<T>(mag);
       }
     }
   }
@@ -1381,8 +1389,9 @@ void MxArray::atInternal(const mxArray* array, mwIndex index,
                  index);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
   const mxArray* element = mxGetCell(array, index);
-  toInternal<T>(element, value);
+  to<T>(element, value);
 }
+
 template <typename T>
 void MxArray::atInternal(const mxArray* array,
                          const std::string& field,
@@ -1396,7 +1405,7 @@ void MxArray::atInternal(const mxArray* array,
   MEXPLUS_ASSERT(mxIsStruct(array), "Expected a struct array.");
   const mxArray* element = mxGetField(array, index, field.c_str());
   MEXPLUS_ASSERT(element, "Invalid field name %s.", field.c_str());
-  toInternal<T>(element, value);
+  to<T>(element, value);
 }
 
 /*************************************************************/
@@ -1489,6 +1498,18 @@ mxArray* MxArray::Numeric(int rows, int columns) {
                                            MxTypes<Scalar>::complexity);
   MEXPLUS_CHECK_NOTNULL(numeric);
   return numeric;
+}
+
+template <typename T>
+mxArray* MxArray::Numeric(std::vector<std::size_t> dims) {
+	typedef typename std::enable_if<
+		MxComplexOrArithmeticType<T>::value, T>::type Scalar;
+	mxArray* numeric = mxCreateNumericArray(dims.size(),
+                                          &dims[0],
+                                          MxTypes<Scalar>::class_id,
+                                          MxTypes<Scalar>::complexity);
+	MEXPLUS_CHECK_NOTNULL(numeric);
+	return numeric;
 }
 
 template <typename T>
