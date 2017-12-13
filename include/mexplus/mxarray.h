@@ -99,12 +99,12 @@ class MxArray {
   }
   /** Move constructor.
    */
-  MxArray(MxArray&& array) : array_(NULL), owner_(false) {
+  MxArray(MxArray&& array) noexcept: array_(NULL), owner_(false) {
     *this = std::move(array);
   }
   /** Move assignment.
    */
-  MxArray& operator= (MxArray&& rhs) {
+  MxArray& operator= (MxArray&& rhs) noexcept {
     if (this != &rhs) {
       array_ = rhs.array_;
       owner_ = rhs.owner_;
