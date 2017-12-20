@@ -76,6 +76,18 @@
 #define MEXPLUS_ASSERT(condition, ...) \
     if (!(condition)) mexErrMsgIdAndTxt("mexplus:error", __VA_ARGS__)
 
+// Is noexcept supported?
+#ifndef NOEXCEPT
+  #if defined(_MSC_VER) && defined(_NOEXCEPT)
+    // MSVC
+    #define NOEXCEPT _NOEXCEPT
+  #elif __cplusplus > 199711L
+    #define NOEXCEPT NOEXCEPT
+  #else
+    #define NOEXCEPT
+  #endif
+#endif
+
 namespace mexplus {
 
 /** mxArray object wrapper for data conversion and manipulation.
@@ -99,12 +111,12 @@ class MxArray {
   }
   /** Move constructor.
    */
-  MxArray(MxArray&& array) noexcept: array_(NULL), owner_(false) {
+  MxArray(MxArray&& array) NOEXCEPT: array_(NULL), owner_(false) {
     *this = std::move(array);
   }
   /** Move assignment.
    */
-  MxArray& operator= (MxArray&& rhs) noexcept {
+  MxArray& operator= (MxArray&& rhs) NOEXCEPT {
     if (this != &rhs) {
       array_ = rhs.array_;
       owner_ = rhs.owner_;
