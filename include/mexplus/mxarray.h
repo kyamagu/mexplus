@@ -968,7 +968,8 @@ class MxArray {
                              R
                            >::type* value) {
     typedef typename std::make_signed<mxChar>::type SignedMxChar;
-    *value = (R)*(reinterpret_cast<SignedMxChar*>(mxGetChars(array)) + index);
+    *value = static_cast<R>(
+        *(reinterpret_cast<SignedMxChar*>(mxGetChars(array)) + index));
   }
   /** Explicit char (unsigned) element assignment.
    */
@@ -1073,7 +1074,7 @@ class MxArray {
     mwSize array_size = static_cast<mwSize>(mxGetNumberOfElements(array));
     value->resize(array_size);
     for (size_t i = 0; i < array_size; ++i) {
-      const mxArray* element = mxGetCell(array, (int)i);
+      const mxArray* element = mxGetCell(array, static_cast<int>(i));
       MEXPLUS_CHECK_NOTNULL(element);
       (*value)[i] = to<typename T::value_type>(element);
     }
@@ -1214,7 +1215,7 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
     MxArithmeticCompound<Container>::value, Container>::type& value) {
   typedef typename Container::value_type ValueType;
   mxArray* array = mxCreateNumericMatrix(1,
-                                         (int)value.size(),
+                                         static_cast<int>(value.size()),
                                          MxTypes<ValueType>::class_id,
                                          MxTypes<ValueType>::complexity);
   MEXPLUS_CHECK_NOTNULL(array);
@@ -1232,7 +1233,7 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
   typedef typename Container::value_type ContainerValueType;
   typedef typename ContainerValueType::value_type ValueType;
   mxArray* array = mxCreateNumericMatrix(1,
-                                         (int)value.size(),
+                                         static_cast<int>(value.size()),
                                          MxTypes<ContainerValueType>::class_id,
                                          mxCOMPLEX);
   MEXPLUS_CHECK_NOTNULL(array);
@@ -1297,7 +1298,7 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
     MxLogicalCompound<Container>::value, Container>::type& value) {
-  mxArray* array = mxCreateLogicalMatrix(1, (int)value.size());
+  mxArray* array = mxCreateLogicalMatrix(1, static_cast<int>(value.size()));
   MEXPLUS_CHECK_NOTNULL(array);
   std::copy(value.begin(), value.end(), mxGetLogicals(array));
   return array;
@@ -1306,7 +1307,7 @@ mxArray* MxArray::fromInternal(const typename std::enable_if<
 template <typename Container>
 mxArray* MxArray::fromInternal(const typename std::enable_if<
     MxCellCompound<Container>::value, Container>::type& value) {
-  mxArray* array = mxCreateCellMatrix(1, (int)value.size());
+  mxArray* array = mxCreateCellMatrix(1, static_cast<int>(value.size()));
   MEXPLUS_CHECK_NOTNULL(array);
   mwIndex index = 0;
   for (typename Container::const_iterator it = value.begin();
@@ -1364,7 +1365,7 @@ void MxArray::toInternal(const mxArray* array,
                          >::type* value) {
   MEXPLUS_CHECK_NOTNULL(value);
   MEXPLUS_ASSERT(mxIsCell(array), "Expected a cell array.");
-  mwSize array_size = (mwSize)mxGetNumberOfElements(array);
+  mwSize array_size = static_cast<mwSize>(mxGetNumberOfElements(array));
   value->resize(array_size);
   for (size_t i = 0; i < array_size; ++i) {
     const mxArray* element = mxGetCell(array, i);
